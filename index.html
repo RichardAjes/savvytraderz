@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HORC-SAVVY Journal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#f3eee4;--card:#fbf8f2;--ink:#1d1b17;--mut:#7a7466;--line:#ddd5c4;--acc:#a86a12;--up:#2b7a4b;--dn:#b03a2e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13120e;--card:#1c1a15;--ink:#ece6d6;--mut:#9a927f;--line:#2f2b22;--acc:#e3b04b;--up:#5cc489;--dn:#ef7d6e}}
+:root[data-theme="dark"]{--bg:#13120e;--card:#1c1a15;--ink:#ece6d6;--mut:#9a927f;--line:#2f2b22;--acc:#e3b04b;--up:#5cc489;--dn:#ef7d6e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'IBM Plex Sans',system-ui,sans-serif}
+#app{max-width:980px;margin:0 auto;padding:16px 14px 40px}
+h1{font:600 26px 'Fraunces',Georgia,serif;margin:0;letter-spacing:-.3px}
+h2{font:600 17px 'Fraunces',Georgia,serif;margin:0 0 10px}
+.mono,td.n,.k b{font-family:'IBM Plex Mono',ui-monospace,monospace}
+header{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+nav button{background:none;border:0;padding:10px 14px;color:var(--mut);font:inherit;cursor:pointer;border-bottom:2px solid transparent}
+nav button.on{color:var(--ink);border-color:var(--acc)}
+button,select,input,textarea{font:inherit;color:var(--ink)}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+.btn.p{background:var(--acc);border-color:var(--acc);color:var(--bg);font-weight:500}
+input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
+textarea{width:100%;resize:vertical}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.k{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.k span{display:block;color:var(--mut);font-size:12px}.k b{font-size:19px;font-weight:500}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.ch{width:100%;height:180px;display:block}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:4px 0 12px}.bar i{display:block;height:100%;background:var(--acc)}
+.bar.w i{background:var(--dn)}.bar.g i{background:var(--up)}
+.lbl{display:flex;justify-content:space-between;font-size:13px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.sc{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;color:var(--mut);font-weight:400;font-size:12px;padding:4px 8px 4px 0;white-space:nowrap}
+td{padding:6px 8px 6px 0;border-top:1px solid var(--line);white-space:nowrap}td.n{text-align:right}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:4px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.msgs{max-height:340px;overflow-y:auto;margin-bottom:10px}
+.msg{padding:8px 11px;border-radius:8px;margin-bottom:8px;white-space:pre-wrap;font-size:14px}
+.msg.u{background:var(--line);margin-left:24px}.msg.ai{border:1px solid var(--line)}
+.toast{background:var(--card);border:1px solid var(--dn);color:var(--dn);padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:14px}
+.note{color:var(--mut);font-size:13px}
+.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:16px}
+.shot{max-width:100%;border-radius:8px;border:1px solid var(--line);margin-top:8px;display:block}
+.runf{display:contents}.runf[hidden]{display:none}
+.toast.ok{border-color:var(--up);color:var(--up)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cal em{font-style:normal;text-align:center;color:var(--mut);font-size:12px}
+.d{min-height:54px;border:1px solid var(--line);border-radius:6px;padding:3px 5px;display:flex;flex-direction:column;justify-content:space-between;font-size:11px;overflow:hidden}
+.d i{font-style:normal;color:var(--mut)}.d b{font-weight:500;font-size:11px;text-align:right}
+.d.gu{background:color-mix(in srgb,var(--up) 20%,transparent)}.d.gd{background:color-mix(in srgb,var(--dn) 20%,transparent)}
+[hidden]{display:none!important}
+</style></head>
+<body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const F=(n,d=2)=>(n<0?'-':'')+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const SG=n=>(n>0?'+':'')+F(n);
+const cl=n=>n>0?'up':n<0?'dn':'';
+const today=()=>new Date().toLocaleDateString('en-CA');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const cleanSym=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9._]/g,'').slice(0,20);
+const DEF=['XAUUSD','EURUSD','GBPUSD','USDCAD','US30','NASDAQ','UK100','NZDUSD','JP225','AUDUSD'];
+const SES=['Asia','London','New York','Other'];
+const LS='tj_v1';
+let S={cfg:{accounts:[{id:'a1',name:'Main',start:10000,daily:5,maxdd:10,target:10}],instruments:DEF.slice()},trades:{},plans:{},imgs:{}};
+let U={tab:'dash',acc:null,sym:DEF[0],busy:false,stream:null,err:'',ok:'',edit:null,loading:true,gate:false,cal:0,myName:''};
+let user=null,ME=null;const NAMES={};
+let db=null,C=null,C2=null,sample=null,pending=false;
+
+const use=async n=>{try{return window.claude?await claude.use(n):null}catch(e){return null}};
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+function saveCfg(){C?C.doc('cfg').set(S.cfg).catch(console.error):lsSave();render()}
+function putTrade(t){S.trades[t.id]=t;C?C.doc('t_'+t.id).set(t).catch(console.error):lsSave()}
+function delTrade(id){delete S.trades[id];C?(C.doc('t_'+id).delete().catch(console.error),C2&&C2.doc('su_'+id).delete().catch(()=>{}),C2&&C2.doc('rv_'+id).delete().catch(()=>{})):lsSave();render()}
+const IMG={};
+function putPlan(p){S.plans[p.id]=p;C?C.doc('p_'+p.id).set(p).catch(console.error):lsSave()}
+const LOCK=7*864e5,locked=p=>Date.now()-p.savedAt>LOCK;
+const plansFor=s=>Object.values(S.plans).filter(p=>p.sym===s&&p.savedAt).sort((a,b)=>b.savedAt-a.savedAt);
+const shown=()=>U.draft&&U.draft.sym===U.sym?null:(S.plans[U.view]?.sym===U.sym?S.plans[U.view]:plansFor(U.sym)[0]||null);
+const D=ms=>new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+const getImg=id=>IMG[id]??S.imgs?.[id];
+async function storeImg(id,img){IMG[id]=img;if(C2)await C2.doc(id).set({d:img});else{(S.imgs??={})[id]=img;lsSave()}}
+async function hydrate(){for(const el of document.querySelectorAll('img[data-id]')){const id=el.dataset.id;let d=getImg(id);if(!d&&C2){try{const x=await C2.doc(id).get();d=x.exists?x.data().d:null;if(d)IMG[id]=d}catch(e){}}if(d)el.src=d;else el.alt='Screenshot unavailable'}}
+function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);
+ for(const w of [1400,1100,900,700]){const sc=Math.min(1,w/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  for(const q of [.7,.55,.4]){const d=c.toDataURL('image/jpeg',q);if(d.length<190000)return res(d)}}rej(new Error('big'))};im.onerror=()=>rej(new Error('bad'));im.src=u})}
+const acct=()=>S.cfg.accounts.find(a=>a.id===U.acc)||S.cfg.accounts[0];
+const allT=()=>Object.values(S.trades);
+function tradesFor(id){return allT().filter(t=>t.acc===id&&t.status!=='open').sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0))}
+function stats(a){const T=tradesFor(a.id);let eq=a.start,peak=eq,dd=0,w=0,rs=[],pts=[eq],day={};
+ T.forEach(t=>{eq+=t.pnl;pts.push(eq);peak=Math.max(peak,eq);dd=Math.max(dd,peak-eq);if(t.pnl>0)w++;if(t.risk>0)rs.push(t.pnl/t.risk);day[t.date]=(day[t.date]||0)+t.pnl});
+ return{T,eq,pts,dd,w,n:T.length,avgR:rs.length?rs.reduce((x,y)=>x+y,0)/rs.length:null,today:day[today()]||0}}
+function group(T,k){const m={};T.forEach(t=>{const g=m[t[k]]??={n:0,w:0,pnl:0};g.n++;g.pnl+=t.pnl;if(t.pnl>0)g.w++});return Object.entries(m).sort((a,b)=>b[1].pnl-a[1].pnl)}
+
+function chart(p){if(p.length<2)return'<p class="note">No trades yet. Add one in the Journal tab.</p>';
+ const W=640,H=180,q=8,mn=Math.min(...p),mx=Math.max(...p),r=(mx-mn)||1;
+ const x=i=>q+i*(W-2*q)/(p.length-1),y=v=>H-q-(v-mn)/r*(H-2*q);
+ const d=p.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('');
+ return`<svg class="ch" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}L${x(p.length-1)} ${H}L${x(0)} ${H}Z" fill="var(--acc)" opacity=".12"/><path d="${d}" fill="none" stroke="var(--acc)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}
+function rule(label,used,lim,cls){if(!lim)return'';const pc=Math.min(100,used/lim*100);
+ return`<div class="lbl"><span>${label}</span><span class="mono">${F(used)}% / ${F(lim)}%</span></div><div class="bar ${cls||(pc>=80?'w':'')}"><i style="width:${pc}%"></i></div>`}
+const gt=(rows)=>rows.length?`<div class="sc"><table><tr><th></th><th>Trades</th><th>Win</th><th>P/L</th></tr>${rows.map(([k,g])=>`<tr><td>${esc(k)}</td><td class="n">${g.n}</td><td class="n">${Math.round(g.w/g.n*100)}%</td><td class="n ${cl(g.pnl)}">${SG(g.pnl)}</td></tr>`).join('')}</table></div>`:'<p class="note">Nothing yet.</p>';
+
+function head(a){return`<header><div><h1>HORC-SAVVY Journal</h1>${U.myName?`<div class="note">Signed in as ${esc(U.myName)}</div>`:''}</div><div class="row"><select id="acc">${S.cfg.accounts.map(x=>`<option value="${x.id}"${x.id===a.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" data-a="editacc" data-v="${a.id}">Limits</button><button class="btn" data-a="editacc" data-v="new">+ Account</button><button class="btn" data-a="editacc" data-v="manage">Manage</button></div></header>
+${C?'':'<p class="note">Sign in to sync your private data across devices. Until then it is saved on this device only.</p>'}
+<nav>${[['dash','Dashboard'],['jour','Journal'],['plan','Plan'],['rules','Rules'],['feed','Friends']].map(([k,l])=>`<button data-a="tab" data-v="${k}" class="${U.tab===k?'on':''}">${l}</button>`).join('')}</nav>`}
+function manageV(){const A=S.cfg.accounts;return`<div class="card"><h2>Accounts</h2>${A.map(x=>{const T=allT().filter(t=>t.acc===x.id),last=T.map(t=>t.date).sort().pop(),act=x.id===U.acc;
+ return`<div class="lbl" style="padding:8px 0;border-top:1px solid var(--line);gap:8px;flex-wrap:wrap"><span><b>${esc(x.name)}</b> <span class="note">${T.length} trades${last?' · last '+esc(last):''}</span></span>${act?'<span class="note">Active</span>':A.length<2?'':U.confirm===x.id?`<span class="row"><span class="dn note">Delete its ${T.length} trades too?</span><button class="btn" data-a="delacc" data-v="${x.id}">Confirm</button><button class="btn" data-a="noconfirm">Cancel</button></span>`:`<button class="btn" data-a="askdel" data-v="${x.id}">Remove</button>`}</div>`}).join('')}<p class="note">Switch to another account to remove the active one. Removing an account also deletes its trades and cannot be undone.</p><button class="btn" data-a="canceledit">Close</button></div>`}
+function editor(){if(U.edit==='manage')return manageV();const n=U.edit==='new',a=n?{name:'',start:10000,daily:5,maxdd:10,target:10}:S.cfg.accounts.find(x=>x.id===U.edit);if(!a)return'';
+ return`<div class="card"><h2>${n?'New account':'Account settings'}</h2><div class="form"><label class="note">Name<input id="e_name" value="${esc(a.name)}"></label><label class="note">Start balance<input id="e_start" type="number" value="${a.start}"></label><label class="note">Daily loss limit %<input id="e_daily" type="number" step="0.1" value="${a.daily}"></label><label class="note">Max drawdown %<input id="e_max" type="number" step="0.1" value="${a.maxdd}"></label><label class="note">Profit target %<input id="e_tgt" type="number" step="0.1" value="${a.target}"></label></div>
+<div class="row" style="margin-top:10px"><button class="btn p" data-a="saveacc" data-v="${n?'new':a.id}">Save</button><button class="btn" data-a="canceledit">Cancel</button>${!n&&S.cfg.accounts.length>1?`<button class="btn" data-a="delacc" data-v="${a.id}">Delete account</button>`:''}</div><p class="note">Drawdown is measured peak-to-trough as a % of the start balance. Set 0 to hide a rule.</p></div>`}
+
+function dash(a){const s=stats(a),pl=s.eq-a.start,op=openFor(a.id),fp=op.reduce((x,t)=>x+flo(t),0);
+ return revCard()+runCard(a)+`<div class="kpis"><div class="k"><span>Running</span><b>${op.length}</b></div><div class="k"><span>Floating P/L</span><b class="${cl(fp)}">${SG(fp)}</b></div><div class="k"><span>Balance</span><b>${F(s.eq)}</b></div><div class="k"><span>Net P/L</span><b class="${cl(pl)}">${SG(pl)}</b></div><div class="k"><span>Return</span><b class="${cl(pl)}">${a.start?SG(pl/a.start*100):'0.00'}%</b></div><div class="k"><span>Win rate</span><b>${s.n?Math.round(s.w/s.n*100):0}%</b></div><div class="k"><span>Avg R</span><b>${s.avgR==null?'n/a':F(s.avgR)}</b></div><div class="k"><span>Max drawdown</span><b class="${s.dd?'dn':''}">${F(s.dd)}</b></div></div>
+<div class="card"><h2>Equity curve</h2>${chart(s.pts)}</div>
+<div class="card"><h2>Prop rules</h2>${rule('Daily loss today',Math.max(0,-s.today)/a.start*100,a.daily)}${rule('Max drawdown',s.dd/a.start*100,a.maxdd)}${rule('Profit target',Math.max(0,pl)/a.start*100,a.target,'g')||'<p class="note">Set limits with the Limits button.</p>'}</div>
+<div class="two"><div class="card"><h2>By pair</h2>${gt(group(s.T,'sym'))}</div><div class="card"><h2>By session</h2>${gt(group(s.T,'session'))}</div></div><div class="card"><h2>By liquidity</h2>${gt(group(s.T.filter(t=>t.liq),'liq'))}</div>${loseCard(a,s)}${cal(a,s)}<button class="btn" data-a="sharej">Share my journey with friends</button>`}
+
+function jour(a){const T=tradesFor(a.id).slice().reverse().slice(0,100);
+ return warnCard()+revCard()+runCard(a)+`<div class="card"><h2>Plan the trade: journal it before you enter</h2><div class="form"><input id="t_date" type="date" value="${today()}"><select id="t_sym">${S.cfg.instruments.map(i=>`<option>${esc(i)}</option>`).join('')}</select><select id="t_side"><option>Buy</option><option>Sell</option></select><select id="t_ses">${SES.map(i=>`<option>${i}</option>`).join('')}</select><input id="t_risk" type="number" step="any" placeholder="Risk ($, required)"><input id="t_note" placeholder="Note"><div class="runf" id="runf"><input id="t_entry" type="number" step="any" placeholder="Entry"><input id="t_tp" type="number" step="any" placeholder="Target"><input id="t_sl" type="number" step="any" placeholder="Stop-loss"></div><label class="note" style="grid-column:1/-1">What liquidity is calling price?<select id="t_liq" style="display:block;width:100%"><option value="">Select…</option>${LIQ.map(x=>`<option>${x}</option>`).join('')}</select></label><div id="liqreq" style="grid-column:1/-1"></div><div style="grid-column:1/-1"><p class="note">Setup screenshot (required)</p><label class="btn">Upload setup screenshot<input id="t_shot" type="file" accept="image/*" hidden></label><img id="t_prev" class="shot" ${U.setup?`src="${U.setup}"`:'hidden'} alt=""></div></div>
+<div class="row" style="margin-top:10px"><button class="btn p" data-a="addtrade">Open running trade</button><label class="btn">Import CSV<input id="file" type="file" accept=".csv,.txt" hidden></label><button class="btn" data-a="export">Export CSV</button></div>
+<p class="note">Every trade starts as a running position. It closes automatically when the price you enter reaches the target or stop-loss. Use CSV import for past trades.</p><p class="note">CSV needs a header row. Recognised columns: date, symbol, type/side, profit, risk, session, comment. New symbols are added automatically.</p></div>
+<div class="card"><h2>Trades</h2>${T.length?`<div class="sc"><table><tr><th>Date</th><th>Pair</th><th>Side</th><th>Session</th><th>R</th><th>P/L</th><th>Plan</th><th>Note</th><th></th></tr>${T.map(t=>`<tr><td>${esc(t.date)}</td><td>${esc(t.sym)}</td><td>${esc(t.side)}</td><td>${esc(t.session)}</td><td class="n">${t.risk>0?F(t.pnl/t.risk):''}</td><td class="n ${cl(t.pnl)}">${SG(t.pnl)}</td><td>${planTag(t)}</td><td>${esc((t.note||'').slice(0,40))}</td><td><button class="btn" data-a="rev" data-v="${t.id}">${t.rev?'Review':'Review needed'}</button> <button class="x" data-a="deltrade" data-v="${t.id}" aria-label="Delete">×</button></td></tr>`).join('')}</table></div>`:'<p class="note">No trades yet.</p>'}</div>`}
+
+const fields=(b,t,ro,p)=>`<select id="${p}bias" style="margin-bottom:8px" ${ro?'disabled':''}>${['','Bullish','Bearish','Neutral'].map(x=>`<option value="${x}"${b===x?' selected':''}>${x||'Bias: not set'}</option>`).join('')}</select><textarea id="${p}text" rows="9" ${ro?'readonly':''} placeholder="Drivers, key levels, catalysts, scenarios, what invalidates the idea">${esc(t)}</textarea>`;
+function planV(){const all=plansFor(U.sym),P=shown(),d=U.draft&&U.draft.sym===U.sym?U.draft:null;
+ const topH=`<div class="chips">${S.cfg.instruments.map(i=>`<button class="chip ${i===U.sym?'on':''}" data-a="sym" data-v="${esc(i)}">${esc(i)}</button>`).join('')}</div>
+<div class="row" style="margin-bottom:14px"><input id="newsym" placeholder="Add pair, e.g. USDJPY" style="width:190px"><button class="btn" data-a="addsym">Add pair</button><button class="btn" data-a="rmsym">Remove ${esc(U.sym)}</button></div>`;
+ let body='';
+ if(d)body=`<div class="card"><h2>New ${esc(U.sym)} plan</h2>${fields(d.bias,d.text,false,'d')}<p class="note">TradingView screenshot (required to save)</p>${d.img?`<img class="shot" src="${d.img}" alt="">`:''}<div class="row" style="margin:8px 0"><label class="btn">${d.img?'Replace':'Upload'} screenshot<input id="dimg" type="file" accept="image/*" hidden></label></div><div class="row"><button class="btn p" data-a="saveplan" ${d.img?'':'disabled'}>Save plan</button><button class="btn" data-a="canceldraft">Cancel</button></div></div>`;
+ else if(!P)body=`<div class="card"><h2>${esc(U.sym)}</h2><p class="note">No plan yet.</p><button class="btn p" data-a="newplan">New plan</button></div>`;
+ else{const lk=locked(P);P.chat??=[];
+  const chat=P.chat.map(m=>`<div class="msg ${m.role==='user'?'u':'ai'}">${esc(m.content)}</div>`).join('')+(U.stream!==null?`<div class="msg ai" id="stream">${esc(U.stream)||'Thinking…'}</div>`:'');
+  body=`<div class="two"><div class="card"><h2>${esc(U.sym)} plan</h2><p class="note">${P.closedAt?'Closed':'Active'} · saved ${D(P.savedAt)} · ${lk?'locked since '+D(P.savedAt+LOCK):'editable until '+D(P.savedAt+LOCK)}</p>${fields(P.bias,P.text,lk,'p')}<img class="shot" id="shot" data-id="${P.id}" alt="">
+  <div class="row" style="margin-top:10px">${lk?'':'<label class="btn">Replace screenshot<input id="pimg" type="file" accept="image/*" hidden></label>'}<button class="btn" data-a="newplan">${P.closedAt?'New plan':'Plan exhausted: open new'}</button>${P!==all[0]?'<button class="btn" data-a="latest">Back to latest</button>':''}<button class="btn" data-a="shareplan">Share plan</button></div></div>
+  <div class="card"><h2>Discuss with Claude</h2>${sample?`<div class="msgs">${chat||'<p class="note">Ask about the drivers, levels or scenarios for this pair.</p>'}</div>${lk?'<p class="note">This plan is locked, so chat is read-only.</p>':`<textarea id="q" rows="3" placeholder="What is the story on ${esc(U.sym)} this week?"></textarea><div class="row" style="margin-top:8px"><button class="btn p" data-a="send" ${U.busy?'disabled':''}>Send</button>${P.chat.length?'<button class="btn" data-a="clearchat">Clear</button>':''}</div>`}`:'<p class="note">AI chat is not available in this view.</p>'}</div></div>`}
+ const hist=all.filter(p=>p!==P);
+ const h=hist.length?`<div class="card"><h2>Plan history</h2><div class="sc"><table><tr><th>Saved</th><th>Bias</th><th>Status</th><th></th></tr>${hist.map(p=>`<tr><td>${D(p.savedAt)}</td><td>${esc(p.bias||'-')}</td><td>${p.closedAt?'Closed':'Active'}${locked(p)?', locked':''}</td><td><button class="btn" data-a="view" data-v="${p.id}">Open</button></td></tr>`).join('')}</table></div></div>`:'';
+ return topH+body+h}
+function render(){pending=false;if(U.loading){$('#app').innerHTML='<p class="note" style="padding:40px 0">Loading…</p>';return}if(U.gate){$('#app').innerHTML=`<h1>HORC-SAVVY Journal</h1><div class="card" style="margin-top:16px"><h2>Sign in to continue</h2><p>Your synced journal needs a Claude sign-in on this page (${esc(U.why||'unknown reason')}).</p><p class="note">Open the link in your browser while signed in at claude.ai, then refresh. In an in-app browser or a home-screen shortcut, sign-in can be missed.</p><button class="btn p" data-a="local">Continue on this device only</button><p class="note">This mode does not sync and is not shared with anyone.</p></div>`;return}if(!S.cfg.accounts.find(a=>a.id===U.acc))U.acc=S.cfg.accounts[0].id;
+ if(!S.cfg.instruments.includes(U.sym))U.sym=S.cfg.instruments[0]||'';
+ const er=U.err,ok=U.ok;U.err='';U.ok='';const a=acct();
+ $('#app').innerHTML=head(a)+(U.edit?editor():'')+(er?`<div class="toast">${esc(er)}</div>`:'')+(ok?`<div class="toast ok">${esc(ok)}</div>`:'')+({dash,jour,plan:planV,feed:feedV,rules:rulesV}[U.tab])(a);
+ const m=$('.msgs');if(m)m.scrollTop=m.scrollHeight;hydrate()}
+function draw(){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){pending=true;return}render()}
+
+function parseCSV(t){const R=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const h=t[i];
+ if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=h}
+ else if(h=='"')q=true;else if(h==','||h==';'||h=='\t'){r.push(c);c=''}
+ else if(h=='\n'){r.push(c);R.push(r);r=[];c=''}else if(h!='\r')c+=h}
+ if(c||r.length){r.push(c);R.push(r)}return R}
+function importCSV(txt){const R=parseCSV(txt);if(R.length<2){U.err='No rows found in that file.';return render()}
+ const h=R[0].map(x=>x.trim().toLowerCase()),col=(...k)=>h.findIndex(x=>k.some(y=>x.includes(y)));
+ const c={d:col('date','time'),s:col('symbol','instrument','pair'),t:col('type','side','direction'),p:col('profit','pnl','p/l'),r:col('risk'),se:col('session'),n:col('note','comment')};
+ if(c.p<0||c.s<0){U.err='Could not find symbol and profit columns.';return render()}
+ let n=0;R.slice(1).forEach(r=>{const pnl=parseFloat(String(r[c.p]||'').replace(/[^0-9.\-]/g,''));const sym=cleanSym(r[c.s]);if(isNaN(pnl)||!sym)return;
+  if(!S.cfg.instruments.includes(sym))S.cfg.instruments.push(sym);
+  putTrade({id:uid(),ts:Date.now()+n,acc:U.acc,date:c.d>=0?String(r[c.d]).trim().slice(0,10).replace(/[./]/g,'-'):today(),sym,side:/sell|short/i.test(r[c.t]||'')?'Sell':'Buy',session:SES.find(x=>x.toLowerCase()===String(r[c.se]||'').trim().toLowerCase())||'Other',pnl,risk:c.r>=0?Math.abs(parseFloat(r[c.r]))||0:0,note:c.n>=0?String(r[c.n]||'').slice(0,120):''});n++});
+ saveCfg();U.err=n?'':'No valid rows were imported.'}
+async function exportCSV(){const d=await use('downloads');if(!d){U.err='Download is not available here.';return render()}
+ const rows=[['date','symbol','side','session','pnl','risk','note'],...tradesFor(U.acc).map(t=>[t.date,t.sym,t.side,t.session,t.pnl,t.risk,t.note||''])];
+ const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+ try{await d.save({filename:'trading-journal.csv',data:csv})}catch(e){if(e.code!=='declined'){U.err='Could not save the file.';render()}}}
+
+async function send(){const el=$('#q'),v=el?.value.trim(),P=shown();if(!v||U.busy||!sample||!P||locked(P))return;
+ P.chat??=[];P.chat.push({role:'user',content:v});U.busy=true;U.stream='';render();
+ let turns=P.chat.slice(-12);while(turns[0].role!=='user')turns.shift();
+ const rec=allT().filter(t=>t.sym===U.sym).slice(-8).map(t=>`${t.date} ${t.side} ${t.session} pnl ${t.pnl}`).join('; ')||'none';
+ const ctx=`You are a concise trading-plan coach helping a trader discuss the story of ${U.sym}: macro drivers, key levels, scenarios and risk. Trader's bias: ${P.bias||'unset'}. Their plan notes: ${P.text||'none'}. Their recent trades on it: ${rec}. Be direct, use short paragraphs, avoid certainty. This is discussion, not financial advice.\n\n`;
+ turns=turns.map((m,i)=>i?m:{...m,content:ctx+m.content});
+ try{const x=await sample(turns,{cache:false,onText:({text})=>{U.stream=text;const b=$('#stream');if(b)b.textContent=text}});P.chat.push({role:'assistant',content:x.text})}
+ catch(e){U.err=e.code==='not_granted'?'AI chat needs your permission to run.':'The AI reply failed. Try again.';if(e.text)P.chat.push({role:'assistant',content:e.text})}
+ U.busy=false;U.stream=null;P.chat=P.chat.slice(-40);putPlan(P);render()}
+async function pickImg(f,cb){try{cb(await shrink(f))}catch(e){U.err='Could not read that image. Try a PNG or JPEG screenshot.';render()}}
+const openFor=id=>allT().filter(t=>t.acc===id&&t.status==='open').sort((a,b)=>(b.ts||0)-(a.ts||0));
+const flo=t=>{if(t.px==null)return 0;const R=t.side==='Buy'?(t.px-t.entry)/(t.entry-t.sl):(t.entry-t.px)/(t.sl-t.entry);return R*t.risk};
+function runCard(a){const o=openFor(a.id);if(!o.length)return'';
+ const row=t=>{const has=t.px!=null,R=has?flo(t)/t.risk:0,fl=flo(t),pos=has?Math.max(0,Math.min(1,t.side==='Buy'?(t.px-t.sl)/(t.tp-t.sl):(t.sl-t.px)/(t.sl-t.tp))):0;
+  return`<div style="border-top:1px solid var(--line);padding:10px 0"><div class="lbl"><b>${esc(t.sym)} ${esc(t.side)}${t.warns&&t.warns.length?' ⚠':''}</b><span class="mono note">Entry ${t.entry} · TP ${t.tp} · SL ${t.sl} · Risk ${F(t.risk)}</span></div><details><summary class="note" style="cursor:pointer">Setup screenshot</summary><img class="shot" data-id="su_${t.id}" alt="" style="max-width:320px"></details><div class="bar" style="margin:8px 0 2px"><i style="width:${pos*100}%"></i></div><div class="lbl note" style="margin-bottom:8px"><span>SL</span><span>TP</span></div><div class="row"><input id="px_${t.id}" type="number" step="any" placeholder="Current price" value="${has?t.px:''}" style="width:140px"><button class="btn" data-a="setpx" data-v="${t.id}">Update price</button><span class="mono ${cl(fl)}">${has?SG(R)+'R ('+SG(fl)+')':'No price yet'}</span><span class="note">${t.pxAt?new Date(t.pxAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</span><span style="flex:1"></span><button class="btn" data-a="hit" data-v="${t.id}|tp">Target hit</button><button class="btn" data-a="hit" data-v="${t.id}|sl">SL hit</button><button class="x" data-a="deltrade" data-v="${t.id}" aria-label="Delete">×</button></div></div>`};
+ return`<div class="card"><h2>Running trades</h2>${o.map(row).join('')}<p class="note">Enter the current price to update the floating result. The trade closes and is journaled automatically when the price reaches the target or the stop-loss.</p></div>`}
+function warnings(t){const w=[],P=plansFor(t.sym)[0];
+ if(!P)w.push('No saved plan for '+t.sym+'. Save a plan with a screenshot first.');
+ else{if(!P.bias)w.push('Your '+t.sym+' plan has no bias set.');else if((P.bias==='Bullish'&&t.side==='Sell')||(P.bias==='Bearish'&&t.side==='Buy'))w.push('Your '+t.sym+' plan is '+P.bias+' but this trade is a '+t.side+'.');
+  if(locked(P))w.push('Your latest '+t.sym+' plan is more than 7 days old. Is it still valid?')}
+ const b=broken(t.ck);if(b.length)w.push('Plan checklist incomplete: '+b.map(k=>SHORT[k]).join(', ')+'.');
+ const a=acct(),s=stats(a);if(a.daily&&a.start&&-s.today/a.start*100>=a.daily)w.push('Your daily loss limit has already been reached today.');
+ return w}
+const warnCard=()=>U.warn?`<div class="card" style="border-color:var(--dn)"><h2 class="dn">⚠ This trade does not align with your plan</h2><ul>${U.warn.w.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div class="row"><button class="btn p" data-a="openanyway">Open anyway</button><button class="btn" data-a="cancelwarn">Cancel</button></div></div>`:'';
+function addRun(){const g=i=>parseFloat($(i).value),en=g('#t_entry'),tp=g('#t_tp'),sl=g('#t_sl'),risk=Math.abs(g('#t_risk')),side=$('#t_side').value,liq=$('#t_liq').value;
+ if([en,tp,sl].some(isNaN)||!(risk>0)){U.err='Enter entry, target, stop-loss and the risk amount ($).';return render()}
+ if(!(side==='Buy'?(sl<en&&en<tp):(tp<en&&en<sl))){U.err=side==='Buy'?'For a Buy: stop-loss < entry < target.':'For a Sell: target < entry < stop-loss.';return render()}
+ if(!liq){U.err='Choose what liquidity is calling price.';return render()}
+ if(!U.setup){U.err='Upload your setup screenshot before opening the trade.';return render()}
+ const ck=readCk(),t={id:uid(),ts:Date.now(),acc:U.acc,status:'open',date:$('#t_date').value||today(),sym:$('#t_sym').value,side,session:$('#t_ses').value,liq,entry:en,tp,sl,risk,rr:Math.abs(tp-en)/Math.abs(en-sl),pnl:0,note:$('#t_note').value.trim(),ck};
+ const w=warnings(t);if(w.length){U.warn={t,w};return render()}openTrade(t)}
+async function openTrade(t){try{await storeImg('su_'+t.id,U.setup)}catch(e){U.err='Could not save the setup screenshot. Try again.';return render()}t.setup=true;putTrade(t);U.setup=null;U.warn=null;render()}
+function closeT(t,k,auto){t.status='closed';t.result=k;t.pnl=k==='tp'?+(t.risk*t.rr).toFixed(2):-t.risk;t.date=today();t.closedAt=Date.now();t.auto=!!auto;putTrade(t);if(S.cfg.autoJ)autoJ();U.rev=t.id;if(auto)U.ok=t.sym+' reached its '+(k==='tp'?'target':'stop-loss')+' and was closed and journaled automatically.';render()}
+function hit(v){const[id,k]=v.split('|'),t=S.trades[id];if(!t||t.status!=='open')return;closeT(t,k,false)}
+function setpx(id){const t=S.trades[id],px=parseFloat($('#px_'+id)?.value);if(!t||t.status!=='open')return;if(isNaN(px)){U.err='Enter the current price.';return render()}
+ t.px=px;t.pxAt=Date.now();const buy=t.side==='Buy';
+ if(buy?px>=t.tp:px<=t.tp)return closeT(t,'tp',true);if(buy?px<=t.sl:px>=t.sl)return closeT(t,'sl',true);putTrade(t);render()}
+function cal(a,s){const b=new Date();b.setDate(1);b.setMonth(b.getMonth()+U.cal);const y=b.getFullYear(),m=b.getMonth(),days=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+6)%7,mp={};
+ s.T.forEach(t=>{mp[t.date]=(mp[t.date]||0)+t.pnl});let tot=0,c='';for(let i=0;i<off;i++)c+='<div></div>';
+ for(let d=1;d<=days;d++){const k=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,v=mp[k];if(v!==undefined)tot+=v;c+=`<div class="d ${v>0?'gu':v<0?'gd':''}"><i>${d}</i>${v!==undefined?`<b class="mono">${v>0?'+':''}${F(v,0)}</b>`:''}</div>`}
+ return`<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">${b.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</h2><div class="row"><span class="mono ${cl(tot)}">${SG(tot)}</span><button class="btn" data-a="calp">‹</button><button class="btn" data-a="calt">Today</button><button class="btn" data-a="caln">›</button></div></div><div class="cal">${'MTWTFSS'.split('').map(x=>`<em>${x}</em>`).join('')}${c}</div></div>`}
+const linkedIds=()=>{const L=S.links||[],out=new Set(L.filter(l=>l.from===ME).map(l=>l.to));return[...new Set(L.filter(l=>l.to===ME&&out.has(l.from)).map(l=>l.from))]};
+async function shareDoc(o){if(!db||!ME)return;const aud=linkedIds();if(!aud.length){U.err='Link at least one friend first. See Linked friends in this tab.';return render()}
+ try{await db.collection('feed').doc(o.kind==='journey'?'j_'+ME:'f'+uid()).set({...o,by:ME,ts:Date.now(),aud});U.ok='Shared with your linked friends.'}catch(e){U.err='Sharing failed. Only friends invited as contributors can share.'}render()}
+function sharePlan(){const P=shown();if(!P)return;const img=getImg(P.id);if(!img){U.err='The screenshot is still loading. Try again in a moment.';return render()}
+ shareDoc({kind:'plan',sym:P.sym,bias:P.bias||'',text:String(P.text||'').slice(0,3000),img})}
+function journeyDoc(){const a=acct(),s=stats(a);if(!a.start||!s.n)return null;
+ const p=s.pts.map(v=>+((v-a.start)/a.start*100).toFixed(2)),st=Math.max(1,Math.ceil(p.length/60)),pts=p.filter((_,i)=>i%st===0||i===p.length-1);
+ return{kind:'journey',n:s.n,wr:s.w/s.n*100,ret:(s.eq-a.start)/a.start*100,avgR:s.avgR,dd:s.dd/a.start*100,pts}}
+function shareJ(){const o=journeyDoc();if(!o){U.err='Add some closed trades before sharing your journey.';return render()}shareDoc(o)}
+function autoJ(){const o=journeyDoc(),aud=linkedIds();if(o&&aud.length&&db&&ME)db.collection('feed').doc('j_'+ME).set({...o,by:ME,ts:Date.now(),aud}).catch(()=>{})}
+async function names(){const ids=[...new Set([...(S.feed||[]).map(x=>x.by),...(S.links||[]).flatMap(l=>[l.from,l.to])])].filter(i=>i&&!(i in NAMES));if(!ids.length||!user)return;ids.forEach(i=>NAMES[i]='A friend');
+ try{const x=await user.profiles(ids),arr=Array.isArray(x)?x:(x instanceof Map?[...x.values()]:Object.values(x||{}));arr.forEach(p=>{if(p&&p.id&&p.name)NAMES[p.id]=p.name});draw()}catch(e){}}
+function friendsV(){const L=S.links||[],ld=linkedIds(),out=L.filter(l=>l.from===ME&&!ld.includes(l.to)),inn=L.filter(l=>l.to===ME&&!ld.includes(l.from));
+ const nm=i=>NAMES[i]&&NAMES[i]!=='A friend'?NAMES[i]:'Friend '+String(i).slice(0,6),jr=i=>(S.feed||[]).find(x=>x.kind==='journey'&&x.by===i&&(!x.aud||x.aud.includes(ME)));
+ return`<div class="card"><h2>Linked friends</h2><p class="note">Your friend code: <b class="mono">${esc(ME||'')}</b> <button class="btn" data-a="copycode">Copy</button></p><div class="row" style="margin:8px 0"><input id="lnk_code" placeholder="Friend's code" style="flex:1;min-width:180px"><button class="btn p" data-a="addlink">Link</button></div>${inn.map(l=>`<div class="lbl" style="padding:6px 0"><span>${esc(nm(l.from))} wants to link</span><span class="row"><button class="btn p" data-a="acceptlink" data-v="${esc(l.from)}">Accept</button><button class="btn" data-a="declinelink" data-v="${esc(l.from)}">Decline</button></span></div>`).join('')}${out.map(l=>`<div class="lbl note" style="padding:6px 0"><span>Waiting for ${esc(nm(l.to))} to link back</span><button class="x" data-a="unlink" data-v="${esc(l.to)}" aria-label="Cancel">×</button></div>`).join('')}${ld.map(i=>{const j=jr(i);return`<div style="border-top:1px solid var(--line);padding:8px 0"><div class="lbl"><b>${esc(nm(i))}</b><button class="btn" data-a="unlink" data-v="${esc(i)}">Unlink</button></div>${j?`<p class="note" style="margin:4px 0">Journey: <span class="${cl(Number(j.ret))}">${SG(Number(j.ret)||0)}%</span> return · ${Math.round(Number(j.wr)||0)}% win rate · ${Number(j.n)||0} trades</p>`:'<p class="note" style="margin:4px 0">No journey shared yet.</p>'}</div>`}).join('')||'<p class="note">No linked friends yet. Send your code to a friend and enter theirs.</p>'}<div class="row" style="margin-top:8px"><button class="btn" data-a="autoj">${S.cfg.autoJ?'✓ ':''}Keep my journey updated for linked friends</button></div></div>`}
+const lset=(a,b)=>db.collection('links').doc('l_'+a+'_'+b);
+function feedV(){const f=(S.feed||[]).filter(x=>x.by===ME||!x.aud||x.aud.includes(ME));
+ const card=x=>{const who=x.by===ME?'You':(NAMES[x.by]||'A friend'),hd=`<div class="note">${esc(who)} · ${D(x.ts)}${x.by===ME?` <button class="x" data-a="unshare" data-v="${x.id}" aria-label="Remove">×</button>`:''}</div>`;
+  if(x.kind==='plan'){const im=typeof x.img==='string'&&x.img.startsWith('data:image/')?`<img class="shot" src="${esc(x.img)}" alt="">`:'';return`<div class="card">${hd}<h2>${esc(x.sym)} plan${x.bias?' · '+esc(x.bias):''}</h2><div class="msg" style="padding:0">${esc(x.text)}</div>${im}</div>`}
+  const N=v=>Number(v)||0;return`<div class="card">${hd}<h2>Trading journey</h2><div class="kpis"><div class="k"><span>Return</span><b class="${cl(N(x.ret))}">${SG(N(x.ret))}%</b></div><div class="k"><span>Trades</span><b>${N(x.n)}</b></div><div class="k"><span>Win rate</span><b>${Math.round(N(x.wr))}%</b></div><div class="k"><span>Avg R</span><b>${x.avgR==null?'n/a':F(N(x.avgR))}</b></div><div class="k"><span>Max drawdown</span><b>${F(N(x.dd))}%</b></div></div>${chart((x.pts||[]).map(Number))}</div>`};
+ return friendsV()+inviteV()+`<p class="note" style="margin-bottom:12px">Plans and journeys your friends share appear here. Only what you choose to share is visible. Your journal stays private.</p>`+(f.length?f.map(card).join(''):'<p class="note">Nothing shared yet. Use Share plan or Share my journey.</p>')}
+const LINK='https://claude.ai/artifact/4BMq9MaCb4zbfdVoXsEige',SUBJ='Join me on HORC-SAVVY Journal',
+BODY='Hi! I use HORC-SAVVY Journal to track my trades and share trading plans. Open it here: '+LINK+'\n\nSign in with your Claude account using this email address. Once I give you access you will get your own private journal, and you can see the plans and progress I share with you.';
+const mailHref=e=>'mailto:'+encodeURIComponent(e||'')+'?subject='+encodeURIComponent(SUBJ)+'&body='+encodeURIComponent(BODY);
+function inviteV(){return`<div class="card"><h2>Invite a friend</h2><div class="row"><input id="inv_email" type="email" placeholder="friend@email.com" value="${esc(U.inv||'')}" style="flex:1;min-width:180px"><a id="inv_mail" class="btn p" href="${esc(mailHref(U.inv))}" target="_blank" rel="noopener" style="text-decoration:none">Email invite</a><button class="btn" data-a="copyinv">Copy invite text</button></div>
+<textarea rows="5" readonly style="margin-top:8px">${esc(BODY)}</textarea>
+<p class="note">This sends the invite message only. The page cannot grant access itself: also add your friend's email in Claude's Share menu with Can edit, so they can open it and keep their own data.</p></div>`}
+const STEPS=[['l','Liquidity target identified and met (daily, weekly, monthly or yearly)'],['s','Structure checked in the right window (same year: monthly, same month: weekly, same week: daily)'],['r','Passive high/low raided by the aggressor; net-effect liquidity marked'],['m','Monthly diverged'],['w','Weekly diverged (after monthly)'],['d','Daily diverged (after weekly)'],['a','Absorption complete before moving to the next window'],['z','Zone: monthly, then weekly, then daily violated liquidity'],['e','Entry model: LL, LH, LL, entered on the LH pullback (mirror for buys)']];
+const LIQ=['Yearly','Monthly','Weekly','Daily','Sessional','Momentum Absorption (MA)'];
+const REQ={Yearly:[['a','Full exhaustion absorption'],['m','Monthly diverged'],['w','Weekly diverged'],['d','Daily diverged']],Monthly:[['a','Full absorption'],['w','Weekly diverged'],['d','Daily diverged']],Weekly:[['a','Full absorption'],['d','Daily diverged']],Daily:[['a','Full absorption'],['s','Sessional diverged (optional, does not always matter)']],Sessional:[],'Momentum Absorption (MA)':[]};
+const ZONE={Yearly:'Yearly',Monthly:'Monthly',Weekly:'Weekly',Daily:'Daily',Sessional:'Sessional'};
+const SHORT={a:'Full absorption',m:'Monthly divergence',w:'Weekly divergence',d:'Daily divergence',s:'Sessional divergence',z:'Sponsoring zone',ow:'Weekly before monthly',od:'Daily before weekly'};
+const MIST=['FOMO','Moved stop-loss','Early exit','Oversized','No confirmation','Chased entry','Revenge trade','Ignored higher window'];
+const WHY=['Plan flaw','News or market change','Normal variance','Execution (timing or slippage)'];
+const broken=ck=>{if(!ck||!ck.liq)return[];const b=[];(REQ[ck.liq]||[]).forEach(([k])=>{if(k!=='s'&&!ck[k])b.push(k)});if(ZONE[ck.liq]&&!ck.z)b.push('z');if(ck.liq==='Yearly'&&ck.w&&!ck.m)b.push('ow');if((ck.liq==='Yearly'||ck.liq==='Monthly')&&ck.d&&!ck.w)b.push('od');return b};
+const planTag=t=>!(t.ck&&t.ck.liq)?'-':broken(t.ck).length?`<span class="dn">✗ ${broken(t.ck).length}</span>`:'<span class="up">✓</span>';
+function reqHtml(liq,ck,p){ck=ck||{};if(!liq)return'';const X=ZONE[liq],rows=(REQ[liq]||[]).map(([k,l])=>`<label class="note" style="display:block"><input type="checkbox" id="${p}_${k}" ${ck[k]?'checked':''}> ${esc(l)}</label>`);
+ if(X)rows.push(`<label class="note" style="display:block"><input type="checkbox" id="${p}_z" ${ck.z?'checked':''}> Sponsored by a ${X} zone (${X} violated liquidity)</label>`);return rows.length?rows.join(''):'<p class="note">No further confirmations are needed for this liquidity.</p>'}
+const readCkP=(p,liq)=>{const o={liq};['a','m','w','d','s','z'].forEach(k=>o[k]=!!$('#'+p+'_'+k)?.checked);return o};
+const readCk=()=>readCkP('ck',$('#t_liq').value);
+const agg=arr=>{const n=arr.length,w=arr.filter(t=>t.pnl>0).length,net=arr.reduce((x,t)=>x+t.pnl,0),rs=arr.filter(t=>t.risk>0).map(t=>t.pnl/t.risk);return{n,wr:n?w/n*100:0,net,r:rs.length?rs.reduce((x,y)=>x+y,0)/rs.length:null}};
+const topN=(arr,f,k=4)=>{const m={};arr.forEach(t=>f(t).forEach(x=>m[x]=(m[x]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,k)};
+function lossData(){const T=stats(acct()).T.filter(t=>t.ck&&t.ck.liq),F1=T.filter(t=>!broken(t.ck).length),B=T.filter(t=>broken(t.ck).length),L=T.filter(t=>t.pnl<0),LF=L.filter(t=>!broken(t.ck).length);return{T,F1,B,L,LF}}
+function revCard(){const t=S.trades[U.rev];if(!t)return'';const lq=(t.ck&&t.ck.liq)||t.liq||'';
+ return`<div class="card"><h2>Review: ${esc(t.sym)} ${esc(t.side)} · ${SG(t.pnl)}</h2><p class="note">Setup screenshot</p><img class="shot" data-id="su_${t.id}" alt="" style="max-width:320px"><p class="note" style="margin-top:12px">Result screenshot (required)</p><label class="btn">${t.hasRv?'Replace':'Upload'} result screenshot<input id="rv_img" type="file" accept="image/*" hidden></label><img id="rv_prev" class="shot" ${U.rvimg?`src="${U.rvimg}"`:t.hasRv?`data-id="rv_${t.id}"`:'hidden'} alt="" style="max-width:320px"><p class="note" style="margin-top:12px">Liquidity that called price</p><select id="rv_liq"><option value="">-</option>${LIQ.map(x=>`<option${lq===x?' selected':''}>${x}</option>`).join('')}</select><div id="rkreq" style="margin-top:6px">${reqHtml(lq,t.ck,'rk')}</div><p class="note" style="margin-top:10px">If you followed the plan and it still lost, why?</p><select id="rv_why"><option value="">-</option>${WHY.map(w=>`<option${t.why===w?' selected':''}>${w}</option>`).join('')}</select><p class="note" style="margin-top:10px">Mistakes</p><div class="chips">${MIST.map((m,i)=>{const on=(t.tags||[]).includes(m);return`<label class="chip ${on?'on':''}"><input type="checkbox" id="rm_${i}" ${on?'checked':''} hidden>${m}</label>`}).join('')}</div><textarea id="rv_note" rows="3" placeholder="What happened, in your words">${esc(t.rnote||'')}</textarea><div class="row" style="margin-top:8px"><button class="btn p" data-a="saverev">Save review</button><button class="btn" data-a="cancelrev">Close</button></div></div>`}
+function loseCard(a,s){const D2=lossData();if(!D2.T.length)return`<div class="card"><h2>Where am I losing?</h2><p class="note">Tick the plan checklist when you add a trade, or review a trade, and this card will show where you lose.</p></div>`;
+ const row=(n,x)=>x.n?`<tr><td>${n}</td><td class="n">${x.n}</td><td class="n">${Math.round(x.wr)}%</td><td class="n">${x.r==null?'-':F(x.r)}</td><td class="n ${cl(x.net)}">${SG(x.net)}</td></tr>`:'';
+ const li=(rows,lab)=>rows.length?`<p class="note" style="margin:8px 0 2px">${lab}</p>${rows.map(([k,c])=>`<div class="lbl"><span>${esc(SHORT[k]||k)}</span><span class="mono">${c}</span></div>`).join('')}`:'';
+ return`<div class="card"><h2>Where am I losing?</h2><div class="sc"><table><tr><th></th><th>Trades</th><th>Win</th><th>Avg R</th><th>P/L</th></tr>${row('Followed plan',agg(D2.F1))}${row('Broke plan',agg(D2.B))}</table></div>${li(topN(D2.L,t=>broken(t.ck)),'Steps skipped on losing trades')}${li(topN(D2.L,t=>t.tags||[]),'Mistakes on losing trades')}${li(topN(D2.LF,t=>t.why?[t.why]:[]),'Why plan-following trades lost')}${sample?`<div class="row" style="margin-top:12px"><input id="ask_q" placeholder="Ask: where am I losing most?" style="flex:1;min-width:180px"><button class="btn p" data-a="askloss" ${U.askbusy?'disabled':''}>Ask Claude</button></div>${U.ans?`<div class="msg ai" style="margin-top:8px">${esc(U.ans)}</div>`:''}`:''}</div>`}
+async function askloss(){if(!sample||U.askbusy)return;const q=($('#ask_q')?.value||'').trim()||'Where am I losing most, and what should I change?',D2=lossData();if(!D2.T.length)return;
+ const sum={followed:agg(D2.F1),broke:agg(D2.B),skippedOnLosses:topN(D2.L,t=>broken(t.ck)).map(([k,c])=>[SHORT[k],c]),mistakesOnLosses:topN(D2.L,t=>t.tags||[]),whyFollowedLost:topN(D2.LF,t=>t.why?[t.why]:[]),byPair:group(D2.T,'sym').map(([k,g])=>[k,g.n,Math.round(g.w/g.n*100),+g.pnl.toFixed(2)]),bySession:group(D2.T,'session').map(([k,g])=>[k,g.n,Math.round(g.w/g.n*100),+g.pnl.toFixed(2)]),recent:D2.T.slice(-30).map(t=>[t.date,t.sym,t.side,t.session,t.pnl,broken(t.ck).map(k=>SHORT[k]).join('+'),(t.tags||[]).join('|'),t.why||'',(t.rnote||'').slice(0,80)])};
+ U.askbusy=true;U.ans='Thinking…';render();
+ try{const r=await sample([{role:'user',content:`You are a trading performance analyst. The trader uses a top-down liquidity model: each trade is called by one liquidity (Yearly, Monthly, Weekly, Daily, Sessional or Momentum Absorption), needs full absorption and divergence on the lower windows, and must be sponsored by a zone of the same window. Trade data as JSON: ${JSON.stringify(sum)}. Answer the question directly in under 150 words, using only this data. Say so if the data is too thin. Question: ${q}`}],{cache:false});U.ans=r.text}catch(e){U.ans='Could not get an answer. Try again.'}
+ U.askbusy=false;render()}
+const ago=d=>new Date(Date.now()-d*864e5).toLocaleDateString('en-CA');
+const viol=(t,k)=>k.startsWith('step:')?broken(t.ck).includes(k.slice(5)):(t.tags||[]).includes(k);
+const rlabel=k=>k.startsWith('step:')?'Skipped: '+(SHORT[k.slice(5)]||k.slice(5)):k;
+function rulesV(){const rules=S.cfg.rules||[],T=allT().filter(t=>t.status!=='open'&&t.ck&&t.ck.liq).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0));
+ const used=new Set(rules.map(r=>r.key)),rec=T.filter(t=>t.date>=ago(30)),ms=topN(rec,t=>[...(t.tags||[]),...broken(t.ck).map(k=>'step:'+k)],8).filter(([k])=>!used.has(k));
+ const rc=r=>{if(!r.key)return`<div class="card"><div class="row" style="justify-content:space-between"><b>${esc(r.text)}</b><button class="x" data-a="delrule" data-v="${r.id}" aria-label="Delete">×</button></div><p class="note">Not tracked automatically.</p></div>`;
+  const w=T.filter(t=>t.date>=ago(7)&&viol(t,r.key)).length,p=T.filter(t=>t.date<ago(7)&&t.date>=ago(14)&&viol(t,r.key)).length;let st=0;for(let i=T.length-1;i>=0&&!viol(T[i],r.key);i--)st++;
+  return`<div class="card"><div class="row" style="justify-content:space-between"><b>${esc(r.text)}</b><button class="x" data-a="delrule" data-v="${r.id}" aria-label="Delete">×</button></div><p class="note">Broken this week: <b class="mono ${w?'dn':'up'}">${w}</b> · last week: <b class="mono">${p}</b> · clean streak: <b class="mono">${st}</b> trades</p></div>`};
+ return`<div class="card"><h2>Rules from your mistakes</h2>${ms.length?`<p class="note">Most frequent in the last 30 days. Turn one into a rule:</p>${ms.map(([k,c])=>`<div class="lbl" style="margin:6px 0"><span>${esc(rlabel(k))} <span class="mono note">×${c}</span></span><button class="btn" data-a="mkrule" data-v="${esc(k)}">Make rule</button></div>`).join('')}`:'<p class="note">No mistakes logged yet. Review your trades to build this list.</p>'}<div class="row" style="margin-top:10px"><input id="rule_new" placeholder="Write your own rule" style="flex:1;min-width:180px"><button class="btn" data-a="addrule">Add rule</button>${sample?'<button class="btn" data-a="pattern">Find patterns with Claude</button>':''}</div>${U.pat?`<div class="msg ai" style="margin-top:8px">${esc(U.pat)}</div>`:''}</div>${rules.length?rules.map(rc).join(''):'<p class="note">No rules yet.</p>'}`}
+async function pattern(){if(!sample||U.askbusy)return;const T=allT().filter(t=>t.status!=='open'&&t.ck&&t.ck.liq&&(t.rnote||(t.tags||[]).length||t.why||t.pnl<0)).sort((a,b)=>a.date<b.date?-1:1).slice(-40);if(!T.length){U.pat='Review a few trades first so there is something to analyse.';return render()}
+ U.askbusy=true;U.pat='Thinking…';render();
+ try{const r=await sample([{role:'user',content:`A trader's reviewed trades (date, pair, result, skipped checklist steps, mistake tags, why-lost, notes): ${JSON.stringify(T.map(t=>[t.date,t.sym,t.pnl,broken(t.ck).map(k=>SHORT[k]).join('+'),(t.tags||[]).join('|'),t.why||'',(t.rnote||'').slice(0,120)]))}. Find the recurring patterns in the notes and suggest up to 4 short, specific rules, each one line. Be direct.`}],{cache:false});U.pat=r.text}catch(e){U.pat='Could not get an answer. Try again.'}
+ U.askbusy=false;render()}
+const ACT2={rev:v=>{U.rev=v;U.rvimg=null;window.scrollTo(0,0);render()},cancelrev:()=>{U.rev=null;render()},
+ saverev:()=>{const t=S.trades[U.rev];if(!t)return;if(!(U.rvimg||t.hasRv)){U.err='Upload your result screenshot to complete the review.';return render()}
+  const liq=$('#rv_liq').value;if(liq){t.liq=liq;t.ck=readCkP('rk',liq)}t.tags=MIST.filter((m,i)=>$('#rm_'+i).checked);t.why=$('#rv_why').value;t.rnote=$('#rv_note').value.trim();
+  (async()=>{try{if(U.rvimg){await storeImg('rv_'+t.id,U.rvimg);t.hasRv=true;U.rvimg=null}}catch(e){U.err='Could not save the screenshot.';return render()}t.rev=true;putTrade(t);U.rev=null;render()})()},
+ askloss,pattern,
+ mkrule:v=>{(S.cfg.rules??=[]).push({id:uid(),key:v,text:v.startsWith('step:')?'Never enter without: '+(SHORT[v.slice(5)]||v.slice(5)):'Avoid: '+v});saveCfg()},
+ addrule:()=>{const x=$('#rule_new').value.trim();if(!x)return;(S.cfg.rules??=[]).push({id:uid(),text:x});saveCfg()},
+ delrule:v=>{S.cfg.rules=(S.cfg.rules||[]).filter(r=>r.id!==v);saveCfg()}};
+const ACT={...ACT2,
+ addlink:()=>{const c=($('#lnk_code')?.value||'').trim();if(!c||c===ME){U.err="Enter your friend's code (not your own).";return render()}lset(ME,c).set({from:ME,to:c,ts:Date.now()}).catch(()=>{});U.ok='Link request sent. It becomes active when your friend links back.';render()},
+ acceptlink:v=>{lset(ME,v).set({from:ME,to:v,ts:Date.now()}).catch(()=>{});U.ok='Linked.';render()},
+ declinelink:v=>{lset(v,ME).delete().catch(()=>{});render()},
+ unlink:v=>{lset(ME,v).delete().catch(()=>{});render()},
+ copycode:async()=>{try{await navigator.clipboard.writeText(ME);U.ok='Friend code copied.'}catch(e){U.err='Copy was blocked. Select the code and copy it manually.'}render()},
+ autoj:()=>{S.cfg.autoJ=!S.cfg.autoJ;if(S.cfg.autoJ)autoJ();saveCfg()},askdel:v=>{U.confirm=v;render()},noconfirm:()=>{U.confirm=null;render()},setpx,openanyway:()=>{const x=U.warn;if(!x)return;x.t.warns=x.w;openTrade(x.t)},cancelwarn:()=>{U.warn=null;render()},copyinv:async()=>{try{await navigator.clipboard.writeText(BODY);U.ok='Invite text copied.'}catch(e){U.err='Copy was blocked. Select the text in the box and copy it manually.'}render()},local:()=>{U.gate=false;render()},hit,sharej:shareJ,shareplan:sharePlan,unshare:v=>{db?.collection('feed').doc(v).delete().catch(()=>{})},calp:()=>{U.cal--;render()},caln:()=>{U.cal++;render()},calt:()=>{U.cal=0;render()},
+ tab:v=>{U.tab=v;U.edit=null;render()},
+ editacc:v=>{U.edit=v;render()},canceledit:()=>{U.edit=null;render()},
+ saveacc:v=>{const o={name:$('#e_name').value.trim()||'Account',start:+$('#e_start').value||0,daily:+$('#e_daily').value||0,maxdd:+$('#e_max').value||0,target:+$('#e_tgt').value||0};
+  if(v==='new'){o.id='a'+uid();S.cfg.accounts.push(o);U.acc=o.id}else Object.assign(S.cfg.accounts.find(x=>x.id===v),o);U.edit=null;saveCfg()},
+ delacc:v=>{if(S.cfg.accounts.length<2)return;allT().filter(t=>t.acc===v).forEach(t=>delTrade(t.id));S.cfg.accounts=S.cfg.accounts.filter(a=>a.id!==v);if(U.acc===v)U.acc=null;U.edit=U.edit==='manage'?'manage':null;U.confirm=null;saveCfg()},
+ addtrade:()=>{return addRun();const pnl=parseFloat($('#t_pnl').value);if(isNaN(pnl)){U.err='Enter the P/L for the trade.';return render()}
+  putTrade({id:uid(),ts:Date.now(),acc:U.acc,date:$('#t_date').value||today(),sym:$('#t_sym').value,side:$('#t_side').value,session:$('#t_ses').value,pnl,risk:Math.abs(parseFloat($('#t_risk').value))||0,note:$('#t_note').value.trim(),ck:readCk()});render()},
+ deltrade:v=>delTrade(v),
+ sym:v=>{U.sym=v;U.view=null;U.draft=null;render()},newplan:()=>{U.draft={sym:U.sym,bias:'',text:'',img:null};render()},canceldraft:()=>{U.draft=null;render()},view:v=>{U.view=v;render()},latest:()=>{U.view=null;render()},saveplan:async()=>{const d=U.draft;if(!d)return;d.bias=$('#dbias').value;d.text=$('#dtext').value;if(!d.img){U.err='Upload a TradingView screenshot before saving.';return render()};const id='pl'+uid(),prev=plansFor(d.sym)[0];try{await storeImg(id,d.img)}catch(e){U.err='Could not save the screenshot. Try again.';return render()};putPlan({id,sym:d.sym,bias:d.bias,text:d.text,savedAt:Date.now(),closedAt:null,chat:[]});if(prev&&!prev.closedAt){prev.closedAt=Date.now();putPlan(prev)}U.draft=null;U.view=null;render()},
+ addsym:()=>{const s=cleanSym($('#newsym').value);if(!s)return;if(!S.cfg.instruments.includes(s))S.cfg.instruments.push(s);U.sym=s;saveCfg()},
+ rmsym:()=>{if(S.cfg.instruments.length<2)return;S.cfg.instruments=S.cfg.instruments.filter(i=>i!==U.sym);saveCfg()},
+ send,clearchat:()=>{const P=shown();if(P&&!locked(P)){P.chat=[];putPlan(P)}render()},export:exportCSV};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b){try{ACT[b.dataset.a]?.(b.dataset.v)}catch(x){console.error(x);U.err='Something went wrong: '+(x.message||x);render()}}});
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.id==='acc'){U.acc=t.value;render()}
+ else if(t.id==='pbias'||t.id==='ptext'){const P=shown();if(P&&!locked(P)){P.bias=$('#pbias').value;P.text=$('#ptext').value;putPlan(P)}}
+ else if(t.id==='dbias'||t.id==='dtext'){if(U.draft){U.draft.bias=$('#dbias').value;U.draft.text=$('#dtext').value}}
+ else if(t.id==='dimg'&&t.files[0]){if(U.draft){U.draft.bias=$('#dbias').value;U.draft.text=$('#dtext').value}pickImg(t.files[0],d=>{U.draft.img=d;render()})}
+ else if(t.id==='pimg'&&t.files[0]){const P=shown();if(P&&!locked(P))pickImg(t.files[0],async d=>{try{await storeImg(P.id,d)}catch(e){U.err='Could not save the screenshot.'}render()})}
+ else if(t.id==='t_liq'){$('#liqreq').innerHTML=reqHtml(t.value,{},'ck')}
+ else if(t.id==='rv_liq'){$('#rkreq').innerHTML=reqHtml(t.value,(S.trades[U.rev]||{}).ck,'rk')}
+ else if(t.id==='t_shot'&&t.files[0]){pickImg(t.files[0],d=>{U.setup=d;const p=$('#t_prev');p.src=d;p.hidden=false})}
+ else if(t.id==='rv_img'&&t.files[0]){pickImg(t.files[0],d=>{U.rvimg=d;const p=$('#rv_prev');p.removeAttribute('data-id');p.src=d;p.hidden=false})}
+ else if((t.id||'').startsWith('rm_')){t.closest('label').classList.toggle('on',t.checked)}
+ else if(t.id==='t_run'){$('#runf').hidden=!t.checked;$('#t_pnl').hidden=t.checked;$('#t_risk').placeholder=t.checked?'Risk ($, required)':'Risk ($, optional)'}
+ else if(t.id==='file'&&t.files[0]){const f=new FileReader();f.onload=()=>importCSV(String(f.result));f.readAsText(t.files[0])}});
+document.addEventListener('input',e=>{if(e.target.id==='inv_email'){U.inv=e.target.value.trim();const a=$('#inv_mail');if(a)a.href=mailHref(U.inv)}});
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pending&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||''))render()},60));
+
+(async function init(){
+ render();try{
+ sample=await use('sample');db=await use('db');
+ user=await use('user');let me=null;try{me=user?await user.id():null}catch(e){}ME=me;if(me){NAMES[me]='You';try{U.myName=(await user.me()).name||''}catch(e){}}
+ if(db&&me){C=db.collection('data/users/'+me);C2=db.collection('data/users/'+me+'/img/s');db.collection('links').onSnapshot(q=>{S.links=q.docs.map(d=>({id:d.id,...d.data()}));names();draw()},()=>{});db.collection('feed').onSnapshot(q=>{S.feed=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0));names();draw()},()=>{});let seeded=false;
+  C.onSnapshot(q=>{S.trades={};S.plans={};let hasCfg=false;
+   q.docs.forEach(d=>{const k=d.id,v=JSON.parse(JSON.stringify(d.data()));if(k==='cfg'){hasCfg=true;S.cfg=v;if(!S.cfg.accounts?.length)S.cfg.accounts=[{id:'a1',name:'Main',start:10000,daily:5,maxdd:10,target:10}];if(!S.cfg.instruments?.length)S.cfg.instruments=DEF.slice()}else if(k.startsWith('t_'))S.trades[k.slice(2)]=v;else if(k.startsWith('p_')&&v.sym)S.plans[k.slice(2)]=v});
+   if(!hasCfg&&!seeded){seeded=true;C.doc('cfg').set(S.cfg).catch(()=>{})}draw()},()=>{});
+ }else{try{const r=JSON.parse(localStorage.getItem(LS)||'null');if(r)S=r}catch(e){}S.plans??={};S.imgs??={}}}catch(e){console.error(e)}
+ U.why=!db?'storage is not available in this view':!ME?'no Claude account detected':'';U.loading=false;U.gate=!C;render();
+})();
+</script></body></html>
