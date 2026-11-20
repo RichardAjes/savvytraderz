@@ -57,9 +57,105 @@ td{padding:6px 8px 6px 0;border-top:1px solid var(--line);white-space:nowrap}td.
 .d i{font-style:normal;color:var(--mut)}.d b{font-weight:500;font-size:11px;text-align:right}
 .d.gu{background:color-mix(in srgb,var(--up) 20%,transparent)}.d.gd{background:color-mix(in srgb,var(--dn) 20%,transparent)}
 [hidden]{display:none!important}
+
+.authbg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.authbg svg{width:100%;height:100%;display:block}
+.authbg .ln{stroke-dasharray:3000;stroke-dashoffset:3000;animation:adraw 3.5s ease-out .2s forwards}
+.authbg .ar{opacity:0;animation:afade 2s ease-out 1.8s forwards}
+@keyframes adraw{to{stroke-dashoffset:0}}@keyframes afade{to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.authbg .ln{animation:none;stroke-dashoffset:0}.authbg .ar{animation:none;opacity:1}}
+.au{position:relative;z-index:1;min-height:80vh;display:flex;align-items:center;justify-content:center;padding:24px 0}
+.au .box{width:100%;max-width:400px;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;padding:28px 24px;box-shadow:0 12px 40px rgba(0,0,0,.18)}
+.au h1{font-size:26px;margin:0 0 4px;text-align:center}
+.au .tag{text-align:center;color:var(--mut);font-size:13px;margin:0 0 20px}
+.au .tabs{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:18px}
+.au .tabs button{flex:1;border:0;background:transparent;color:var(--mut);font:inherit;font-weight:500;padding:9px;border-radius:9px;cursor:pointer}
+.au .tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.au label{display:block;font-size:13px;color:var(--mut);margin-bottom:12px}
+.au input{width:100%;margin-top:5px;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;outline:none}
+.au input:focus{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 25%,transparent)}
+.au .pw{position:relative}.au .pw input{padding-right:64px}
+.au .pw button{position:absolute;right:8px;top:50%;transform:translateY(-50%);margin-top:2px;border:0;background:transparent;color:var(--acc);font:inherit;font-size:13px;cursor:pointer;padding:6px}
+.au .go{width:100%;padding:13px;border:0;border-radius:10px;background:var(--acc);color:#1a1409;font:inherit;font-weight:600;font-size:16px;cursor:pointer;margin-top:4px}
+.au .go:disabled{opacity:.6;cursor:wait}
+.au .msg{font-size:13px;border-radius:8px;padding:10px 12px;margin:0 0 12px}
+.au .msg.e{color:var(--dn);background:color-mix(in srgb,var(--dn) 12%,transparent)}
+.au .msg.o{color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}
+.au .lnk{display:block;margin:14px auto 0;border:0;background:transparent;color:var(--mut);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline}
+.au .fine{text-align:center;color:var(--mut);font-size:12px;margin:16px 0 0}
 </style></head>
 <body><div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2"></script>
 <script>
+
+/* ===== Supabase bridge: replaces the Claude runtime (db, user, downloads) ===== */
+const SB=supabase.createClient('https://hsieeoiczasaprutlzwc.supabase.co','sb_publishable_dyhpISTbOgXPd0i5PCBg4g_Fvnwi8TJ');
+let SB_UID=null;const SB_L={};
+const SB_MAP={
+ docs:{t:'user_docs',on:'user_id,id',row:(id,v)=>({user_id:SB_UID,id,data:v}),out:r=>r.data},
+ imgs:{t:'user_imgs',on:'user_id,id',row:(id,v)=>({user_id:SB_UID,id,d:v.d}),out:r=>({d:r.d})},
+ links:{t:'links',on:'id',row:(id,v)=>({id,from_id:v.from,to_id:v.to,ts:v.ts}),out:r=>({from:r.from_id,to:r.to_id,ts:r.ts})},
+ feed:{t:'feed',on:'id',row:(id,v)=>{const{by,aud,ts,...data}=v;return{id,by,aud,ts,data}},out:r=>({...r.data,by:r.by,aud:r.aud,ts:r.ts})}
+};
+const SB_notify=t=>(SB_L[t]||[]).forEach(f=>f());
+function SB_col(path){
+ const m=SB_MAP[path==='links'||path==='feed'?path:path.endsWith('/img/s')?'imgs':'docs'],T=m.t;
+ const own=q=>(T==='user_docs'||T==='user_imgs')?q.eq('user_id',SB_UID):q;
+ return{
+  doc:id=>({
+   async set(v){const{error}=await SB.from(T).upsert(m.row(id,v),{onConflict:m.on});if(error)throw error;SB_notify(T)},
+   async get(){const{data,error}=await own(SB.from(T).select('*').eq('id',id)).maybeSingle();if(error)throw error;return{exists:!!data,data:()=>data?m.out(data):undefined}},
+   async delete(){const{error}=await own(SB.from(T).delete().eq('id',id));if(error)throw error;SB_notify(T)}
+  }),
+  onSnapshot(cb,err){
+   const run=async()=>{const{data,error}=await own(SB.from(T).select('*'));if(error){err&&err(error);return}cb({docs:data.map(r=>({id:r.id,data:()=>m.out(r)}))})};
+   (SB_L[T]??=[]).push(run);run();
+   SB.channel('rt_'+T+'_'+Math.random().toString(36).slice(2)).on('postgres_changes',{event:'*',schema:'public',table:T},()=>run()).subscribe();
+  }
+ };
+}
+async function SB_ready(){try{const{data:{session}}=await SB.auth.getSession();SB_UID=session?.user?.id||null}catch(e){SB_UID=null}}
+window.claude={async use(n){
+ if(n==='db')return SB_UID?{collection:SB_col}:null;
+ if(n==='user'){if(!SB_UID)return null;return{id:async()=>SB_UID,
+  me:async()=>{const{data}=await SB.from('profiles').select('name').eq('id',SB_UID).maybeSingle();return{name:data?.name||''}},
+  profiles:async ids=>{const{data}=await SB.from('profiles').select('id,name').in('id',ids);return data||[]}}}
+ if(n==='downloads')return{save:async({filename,data})=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/csv'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}};
+ return null}};
+SB.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY'){const p=prompt('Enter a new password (min 6 characters)');if(p&&p.length>=6)SB.auth.updateUser({password:p}).then(()=>alert('Password updated.'))}});
+function authChart(){let x=7,r=()=>(x=(x*16807)%2147483647)/2147483647,n=64,pts=[];
+ for(let i=0;i<n;i++){const t=i/(n-1);pts.push([t*1200,470-t*300-Math.sin(t*9)*38-(r()-.5)*60])}
+ const d=pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(0)+' '+q[1].toFixed(0)).join(''),
+ d2=pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(0)+' '+(q[1]+70+Math.sin(i/4)*22).toFixed(0)).join('');
+ const grid=[1,2,3,4,5].map(i=>`<line x1="0" x2="1200" y1="${i*100}" y2="${i*100}" stroke="var(--line)" stroke-width="1" opacity=".5"/>`).join('');
+ return`<div class="authbg"><svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--acc)" stop-opacity=".28"/><stop offset="1" stop-color="var(--acc)" stop-opacity="0"/></linearGradient></defs>${grid}<path class="ar" d="${d}L1200 600L0 600Z" fill="url(#ag)"/><path class="ln" d="${d2}" fill="none" stroke="var(--up)" stroke-width="2" opacity=".35"/><path class="ln" d="${d}" fill="none" stroke="var(--acc)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`}
+const authMsg=m=>/failed to fetch|network|load failed/i.test(m)?'Cannot reach the server. Check your internet connection and try again.':/invalid login/i.test(m)?'Wrong email or password. Please try again.':/already registered|already been registered/i.test(m)?'This email already has an account. Try signing in instead.':/rate limit|too many/i.test(m)?'Too many attempts. Please wait a few minutes and try again.':/not confirmed/i.test(m)?'Please confirm your email first. Check your inbox.':/valid email|invalid format/i.test(m)?'Please enter a valid email address.':m;
+function authView(){const up=U.amode==='up',b=U.abusy;
+ $('#app').innerHTML=authChart()+`<div class="au"><div class="box"><h1>HORC-SAVVY Journal</h1><p class="tag">Track trades. Follow your rules. Grow with discipline.</p>
+<div class="tabs"><button class="${up?'':'on'}" onclick="authTab('in')">Sign in</button><button class="${up?'on':''}" onclick="authTab('up')">Create account</button></div>
+${U.aerr?`<div class="msg e">${esc(U.aerr)}</div>`:''}${U.aok?`<div class="msg o">${esc(U.aok)}</div>`:''}
+<label>Email<input id="au_e" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(U.aemail||'')}"></label>
+<label>Password<div class="pw"><input id="au_p" type="password" autocomplete="${up?'new-password':'current-password'}" placeholder="${up?'At least 6 characters':'Your password'}" onkeydown="if(event.key==='Enter')authGo()"><button type="button" onclick="const i=$('#au_p'),h=i.type==='password';i.type=h?'text':'password';this.textContent=h?'Hide':'Show'">Show</button></div></label>
+<button class="go" onclick="authGo()" ${b?'disabled':''}>${b?'Please wait…':up?'Create my account':'Sign in'}</button>
+${up?'':'<button class="lnk" onclick="authReset()">Forgot your password?</button>'}
+<p class="fine">Your journal is private to your account and syncs across all your devices.</p></div></div>`;
+ const e=$('#au_e');if(e&&!U.aemail)e.focus()}
+function authTab(m){U.amode=m;U.aerr=U.aok='';U.aemail=($('#au_e')?.value||'').trim();authView()}
+async function authGo(){const e=$('#au_e').value.trim(),p=$('#au_p').value;U.aemail=e;U.aerr='';U.aok='';
+ if(!e||!e.includes('@')){U.aerr='Please enter a valid email address.';return authView()}
+ if(p.length<6){U.aerr='Your password needs at least 6 characters.';return authView()}
+ U.abusy=true;authView();let r;
+ try{r=U.amode==='up'?await SB.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin}}):await SB.auth.signInWithPassword({email:e,password:p})}catch(x){r={error:{message:String(x.message||x)}}}
+ U.abusy=false;
+ if(r.error){U.aerr=authMsg(r.error.message);return authView()}
+ if(r.data.session)return location.reload();
+ if(U.amode==='up'&&r.data.user&&r.data.user.identities&&!r.data.user.identities.length){U.aerr=authMsg('already registered');return authView()}
+ U.aok='Account created! Check your email to confirm it, then sign in.';U.amode='in';authView()}
+async function authReset(){const e=($('#au_e').value||'').trim();U.aemail=e;if(!e||!e.includes('@')){U.aerr='Type your email above first, then tap "Forgot your password?".';return authView()}
+ let r;try{r=await SB.auth.resetPasswordForEmail(e,{redirectTo:location.origin})}catch(x){r={error:{message:String(x.message||x)}}}
+ U.aerr=r.error?authMsg(r.error.message):'';U.aok=r.error?'':'Password reset email sent. Check your inbox.';authView()}
+/* ===== end bridge ===== */
+
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const F=(n,d=2)=>(n<0?'-':'')+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -110,7 +206,7 @@ function rule(label,used,lim,cls){if(!lim)return'';const pc=Math.min(100,used/li
  return`<div class="lbl"><span>${label}</span><span class="mono">${F(used)}% / ${F(lim)}%</span></div><div class="bar ${cls||(pc>=80?'w':'')}"><i style="width:${pc}%"></i></div>`}
 const gt=(rows)=>rows.length?`<div class="sc"><table><tr><th></th><th>Trades</th><th>Win</th><th>P/L</th></tr>${rows.map(([k,g])=>`<tr><td>${esc(k)}</td><td class="n">${g.n}</td><td class="n">${Math.round(g.w/g.n*100)}%</td><td class="n ${cl(g.pnl)}">${SG(g.pnl)}</td></tr>`).join('')}</table></div>`:'<p class="note">Nothing yet.</p>';
 
-function head(a){return`<header><div><h1>HORC-SAVVY Journal</h1>${U.myName?`<div class="note">Signed in as ${esc(U.myName)}</div>`:''}</div><div class="row"><select id="acc">${S.cfg.accounts.map(x=>`<option value="${x.id}"${x.id===a.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" data-a="editacc" data-v="${a.id}">Limits</button><button class="btn" data-a="editacc" data-v="new">+ Account</button><button class="btn" data-a="editacc" data-v="manage">Manage</button></div></header>
+function head(a){return`<header><div><h1>HORC-SAVVY Journal</h1>${U.myName?`<div class="note">Signed in as ${esc(U.myName)}</div>`:''}</div><div class="row"><select id="acc">${S.cfg.accounts.map(x=>`<option value="${x.id}"${x.id===a.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" data-a="editacc" data-v="${a.id}">Limits</button><button class="btn" data-a="editacc" data-v="new">+ Account</button><button class="btn" data-a="editacc" data-v="manage">Manage</button><button class="btn" onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button></div></header>
 ${C?'':'<p class="note">Sign in to sync your private data across devices. Until then it is saved on this device only.</p>'}
 <nav>${[['dash','Dashboard'],['jour','Journal'],['plan','Plan'],['rules','Rules'],['feed','Friends']].map(([k,l])=>`<button data-a="tab" data-v="${k}" class="${U.tab===k?'on':''}">${l}</button>`).join('')}</nav>`}
 function manageV(){const A=S.cfg.accounts;return`<div class="card"><h2>Accounts</h2>${A.map(x=>{const T=allT().filter(t=>t.acc===x.id),last=T.map(t=>t.date).sort().pop(),act=x.id===U.acc;
@@ -142,11 +238,11 @@ function planV(){const all=plansFor(U.sym),P=shown(),d=U.draft&&U.draft.sym===U.
   const chat=P.chat.map(m=>`<div class="msg ${m.role==='user'?'u':'ai'}">${esc(m.content)}</div>`).join('')+(U.stream!==null?`<div class="msg ai" id="stream">${esc(U.stream)||'Thinking…'}</div>`:'');
   body=`<div class="two"><div class="card"><h2>${esc(U.sym)} plan</h2><p class="note">${P.closedAt?'Closed':'Active'} · saved ${D(P.savedAt)} · ${lk?'locked since '+D(P.savedAt+LOCK):'editable until '+D(P.savedAt+LOCK)}</p>${fields(P.bias,P.text,lk,'p')}<img class="shot" id="shot" data-id="${P.id}" alt="">
   <div class="row" style="margin-top:10px">${lk?'':'<label class="btn">Replace screenshot<input id="pimg" type="file" accept="image/*" hidden></label>'}<button class="btn" data-a="newplan">${P.closedAt?'New plan':'Plan exhausted: open new'}</button>${P!==all[0]?'<button class="btn" data-a="latest">Back to latest</button>':''}<button class="btn" data-a="shareplan">Share plan</button></div></div>
-  <div class="card"><h2>Discuss with Claude</h2>${sample?`<div class="msgs">${chat||'<p class="note">Ask about the drivers, levels or scenarios for this pair.</p>'}</div>${lk?'<p class="note">This plan is locked, so chat is read-only.</p>':`<textarea id="q" rows="3" placeholder="What is the story on ${esc(U.sym)} this week?"></textarea><div class="row" style="margin-top:8px"><button class="btn p" data-a="send" ${U.busy?'disabled':''}>Send</button>${P.chat.length?'<button class="btn" data-a="clearchat">Clear</button>':''}</div>`}`:'<p class="note">AI chat is not available in this view.</p>'}</div></div>`}
+  <div class="card"><h2>Discuss with Claude</h2>${sample?`<div class="msgs">${chat||'<p class="note">Ask about the drivers, levels or scenarios for this pair.</p>'}</div>${lk?'<p class="note">This plan is locked, so chat is read-only.</p>':`<textarea id="q" rows="3" placeholder="What is the story on ${esc(U.sym)} this week?"></textarea><div class="row" style="margin-top:8px"><button class="btn p" data-a="send" ${U.busy?'disabled':''}>Send</button>${P.chat.length?'<button class="btn" data-a="clearchat">Clear</button>':''}</div>`}`:'<p class="note">AI chat is coming soon.</p>'}</div></div>`}
  const hist=all.filter(p=>p!==P);
  const h=hist.length?`<div class="card"><h2>Plan history</h2><div class="sc"><table><tr><th>Saved</th><th>Bias</th><th>Status</th><th></th></tr>${hist.map(p=>`<tr><td>${D(p.savedAt)}</td><td>${esc(p.bias||'-')}</td><td>${p.closedAt?'Closed':'Active'}${locked(p)?', locked':''}</td><td><button class="btn" data-a="view" data-v="${p.id}">Open</button></td></tr>`).join('')}</table></div></div>`:'';
  return topH+body+h}
-function render(){pending=false;if(U.loading){$('#app').innerHTML='<p class="note" style="padding:40px 0">Loading…</p>';return}if(U.gate){$('#app').innerHTML=`<h1>HORC-SAVVY Journal</h1><div class="card" style="margin-top:16px"><h2>Sign in to continue</h2><p>Your synced journal needs a Claude sign-in on this page (${esc(U.why||'unknown reason')}).</p><p class="note">Open the link in your browser while signed in at claude.ai, then refresh. In an in-app browser or a home-screen shortcut, sign-in can be missed.</p><button class="btn p" data-a="local">Continue on this device only</button><p class="note">This mode does not sync and is not shared with anyone.</p></div>`;return}if(!S.cfg.accounts.find(a=>a.id===U.acc))U.acc=S.cfg.accounts[0].id;
+function render(){pending=false;if(U.loading){$('#app').innerHTML='<p class="note" style="padding:40px 0">Loading…</p>';return}if(U.gate){authView();return}if(!S.cfg.accounts.find(a=>a.id===U.acc))U.acc=S.cfg.accounts[0].id;
  if(!S.cfg.instruments.includes(U.sym))U.sym=S.cfg.instruments[0]||'';
  const er=U.err,ok=U.ok;U.err='';U.ok='';const a=acct();
  $('#app').innerHTML=head(a)+(U.edit?editor():'')+(er?`<div class="toast">${esc(er)}</div>`:'')+(ok?`<div class="toast ok">${esc(ok)}</div>`:'')+({dash,jour,plan:planV,feed:feedV,rules:rulesV}[U.tab])(a);
@@ -214,7 +310,7 @@ function cal(a,s){const b=new Date();b.setDate(1);b.setMonth(b.getMonth()+U.cal)
  return`<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">${b.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</h2><div class="row"><span class="mono ${cl(tot)}">${SG(tot)}</span><button class="btn" data-a="calp">‹</button><button class="btn" data-a="calt">Today</button><button class="btn" data-a="caln">›</button></div></div><div class="cal">${'MTWTFSS'.split('').map(x=>`<em>${x}</em>`).join('')}${c}</div></div>`}
 const linkedIds=()=>{const L=S.links||[],out=new Set(L.filter(l=>l.from===ME).map(l=>l.to));return[...new Set(L.filter(l=>l.to===ME&&out.has(l.from)).map(l=>l.from))]};
 async function shareDoc(o){if(!db||!ME)return;const aud=linkedIds();if(!aud.length){U.err='Link at least one friend first. See Linked friends in this tab.';return render()}
- try{await db.collection('feed').doc(o.kind==='journey'?'j_'+ME:'f'+uid()).set({...o,by:ME,ts:Date.now(),aud});U.ok='Shared with your linked friends.'}catch(e){U.err='Sharing failed. Only friends invited as contributors can share.'}render()}
+ try{await db.collection('feed').doc(o.kind==='journey'?'j_'+ME:'f'+uid()).set({...o,by:ME,ts:Date.now(),aud});U.ok='Shared with your linked friends.'}catch(e){U.err='Sharing failed. Please try again.'}render()}
 function sharePlan(){const P=shown();if(!P)return;const img=getImg(P.id);if(!img){U.err='The screenshot is still loading. Try again in a moment.';return render()}
  shareDoc({kind:'plan',sym:P.sym,bias:P.bias||'',text:String(P.text||'').slice(0,3000),img})}
 function journeyDoc(){const a=acct(),s=stats(a);if(!a.start||!s.n)return null;
@@ -233,12 +329,12 @@ function feedV(){const f=(S.feed||[]).filter(x=>x.by===ME||!x.aud||x.aud.include
   if(x.kind==='plan'){const im=typeof x.img==='string'&&x.img.startsWith('data:image/')?`<img class="shot" src="${esc(x.img)}" alt="">`:'';return`<div class="card">${hd}<h2>${esc(x.sym)} plan${x.bias?' · '+esc(x.bias):''}</h2><div class="msg" style="padding:0">${esc(x.text)}</div>${im}</div>`}
   const N=v=>Number(v)||0;return`<div class="card">${hd}<h2>Trading journey</h2><div class="kpis"><div class="k"><span>Return</span><b class="${cl(N(x.ret))}">${SG(N(x.ret))}%</b></div><div class="k"><span>Trades</span><b>${N(x.n)}</b></div><div class="k"><span>Win rate</span><b>${Math.round(N(x.wr))}%</b></div><div class="k"><span>Avg R</span><b>${x.avgR==null?'n/a':F(N(x.avgR))}</b></div><div class="k"><span>Max drawdown</span><b>${F(N(x.dd))}%</b></div></div>${chart((x.pts||[]).map(Number))}</div>`};
  return friendsV()+inviteV()+`<p class="note" style="margin-bottom:12px">Plans and journeys your friends share appear here. Only what you choose to share is visible. Your journal stays private.</p>`+(f.length?f.map(card).join(''):'<p class="note">Nothing shared yet. Use Share plan or Share my journey.</p>')}
-const LINK='https://claude.ai/artifact/4BMq9MaCb4zbfdVoXsEige',SUBJ='Join me on HORC-SAVVY Journal',
-BODY='Hi! I use HORC-SAVVY Journal to track my trades and share trading plans. Open it here: '+LINK+'\n\nSign in with your Claude account using this email address. Once I give you access you will get your own private journal, and you can see the plans and progress I share with you.';
+const LINK='https://savvytraderz.netlify.app',SUBJ='Join me on HORC-SAVVY Journal',
+BODY='Hi! I use HORC-SAVVY Journal to track my trades and share trading plans. Open it here: '+LINK+'\n\nCreate a free account with this email address to get your own private journal. Then send me your friend code (Friends tab) and I will link with you so you can see the plans and progress I share.';
 const mailHref=e=>'mailto:'+encodeURIComponent(e||'')+'?subject='+encodeURIComponent(SUBJ)+'&body='+encodeURIComponent(BODY);
 function inviteV(){return`<div class="card"><h2>Invite a friend</h2><div class="row"><input id="inv_email" type="email" placeholder="friend@email.com" value="${esc(U.inv||'')}" style="flex:1;min-width:180px"><a id="inv_mail" class="btn p" href="${esc(mailHref(U.inv))}" target="_blank" rel="noopener" style="text-decoration:none">Email invite</a><button class="btn" data-a="copyinv">Copy invite text</button></div>
 <textarea rows="5" readonly style="margin-top:8px">${esc(BODY)}</textarea>
-<p class="note">This sends the invite message only. The page cannot grant access itself: also add your friend's email in Claude's Share menu with Can edit, so they can open it and keep their own data.</p></div>`}
+<p class="note">Your friend creates an account, then you exchange friend codes above to link.</p></div>`}
 const STEPS=[['l','Liquidity target identified and met (daily, weekly, monthly or yearly)'],['s','Structure checked in the right window (same year: monthly, same month: weekly, same week: daily)'],['r','Passive high/low raided by the aggressor; net-effect liquidity marked'],['m','Monthly diverged'],['w','Weekly diverged (after monthly)'],['d','Daily diverged (after weekly)'],['a','Absorption complete before moving to the next window'],['z','Zone: monthly, then weekly, then daily violated liquidity'],['e','Entry model: LL, LH, LL, entered on the LH pullback (mirror for buys)']];
 const LIQ=['Yearly','Monthly','Weekly','Daily','Sessional','Momentum Absorption (MA)'];
 const REQ={Yearly:[['a','Full exhaustion absorption'],['m','Monthly diverged'],['w','Weekly diverged'],['d','Daily diverged']],Monthly:[['a','Full absorption'],['w','Weekly diverged'],['d','Daily diverged']],Weekly:[['a','Full absorption'],['d','Daily diverged']],Daily:[['a','Full absorption'],['s','Sessional diverged (optional, does not always matter)']],Sessional:[],'Momentum Absorption (MA)':[]};
@@ -325,7 +421,7 @@ document.addEventListener('focusout',()=>setTimeout(()=>{if(pending&&!/INPUT|TEX
 
 (async function init(){
  render();try{
- sample=await use('sample');db=await use('db');
+ await SB_ready();sample=null;db=await use('db');
  user=await use('user');let me=null;try{me=user?await user.id():null}catch(e){}ME=me;if(me){NAMES[me]='You';try{U.myName=(await user.me()).name||''}catch(e){}}
  if(db&&me){C=db.collection('data/users/'+me);C2=db.collection('data/users/'+me+'/img/s');db.collection('links').onSnapshot(q=>{S.links=q.docs.map(d=>({id:d.id,...d.data()}));names();draw()},()=>{});db.collection('feed').onSnapshot(q=>{S.feed=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0));names();draw()},()=>{});let seeded=false;
   C.onSnapshot(q=>{S.trades={};S.plans={};let hasCfg=false;
