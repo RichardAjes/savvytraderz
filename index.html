@@ -83,6 +83,23 @@ td{padding:6px 8px 6px 0;border-top:1px solid var(--line);white-space:nowrap}td.
 .au .msg.o{color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}
 .au .lnk{display:block;margin:14px auto 0;border:0;background:transparent;color:var(--mut);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline}
 .au .fine{text-align:center;color:var(--mut);font-size:12px;margin:16px 0 0}
+
+body{-webkit-text-size-adjust:100%}
+header{padding-top:8px}header h1{font-size:24px;margin:0}
+header .row{gap:8px}
+.btn{min-height:40px;border-radius:8px;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--acc)}.btn.p:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--mut)}.btn.ghost:hover{color:var(--dn);border-color:var(--line)}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);overflow-x:auto;white-space:nowrap;scrollbar-width:none;margin-left:-4px;margin-right:-4px}
+nav::-webkit-scrollbar{display:none}
+nav button{padding:13px 18px;font-size:15px;font-weight:500;flex:1;min-width:max-content}
+.card{border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h2{margin-top:0}
+input,select,textarea{font-size:16px;border-radius:8px;padding:9px 11px}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--acc) 45%,transparent);outline-offset:1px;border-color:var(--acc)}
+#sbtoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:90vw;text-align:center}
+#sbtoast.show{opacity:1;transform:translate(-50%,0)}#sbtoast.bad{background:var(--dn);color:#fff;border-radius:12px}
+@media(max-width:600px){header{flex-direction:column;align-items:stretch}header .row select{flex:1 1 100%}header .row .btn{flex:1 1 auto}.card{padding:14px}}
 </style></head>
 <body><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2"></script>
@@ -98,17 +115,24 @@ const SB_MAP={
  feed:{t:'feed',on:'id',row:(id,v)=>{const{by,aud,ts,...data}=v;return{id,by,aud,ts,data}},out:r=>({...r.data,by:r.by,aud:r.aud,ts:r.ts})}
 };
 const SB_notify=t=>(SB_L[t]||[]).forEach(f=>f());
+const SB_pend={};let SB_tt;
+function SB_toast(msg,bad){let el=document.getElementById('sbtoast');if(!el){el=document.createElement('div');el.id='sbtoast';document.body.appendChild(el)}el.textContent=msg;el.className=bad?'bad show':'show';clearTimeout(SB_tt);SB_tt=setTimeout(()=>{el.className=''},bad?9000:1400)}
+async function SB_write(T,fn){SB_pend[T]=(SB_pend[T]||0)+1;let err=null;
+ for(let i=0;i<2;i++){try{const{error}=await fn();if(!error){err=null;break}err=error}catch(e){err=e}if(i===0&&err)await new Promise(r=>setTimeout(r,1000))}
+ SB_pend[T]--;
+ if(err){const m=String(err.message||err);SB_toast('Could not save: '+(/fetch|network/i.test(m)?'no connection to the server':m)+'. Please try again.',true);SB_notify(T);throw err}
+ SB_toast('Saved ✓');SB_notify(T)}
 function SB_col(path){
  const m=SB_MAP[path==='links'||path==='feed'?path:path.endsWith('/img/s')?'imgs':'docs'],T=m.t;
  const own=q=>(T==='user_docs'||T==='user_imgs')?q.eq('user_id',SB_UID):q;
  return{
   doc:id=>({
-   async set(v){const{error}=await SB.from(T).upsert(m.row(id,v),{onConflict:m.on});if(error)throw error;SB_notify(T)},
+   set:v=>SB_write(T,()=>SB.from(T).upsert(m.row(id,v),{onConflict:m.on})),
    async get(){const{data,error}=await own(SB.from(T).select('*').eq('id',id)).maybeSingle();if(error)throw error;return{exists:!!data,data:()=>data?m.out(data):undefined}},
-   async delete(){const{error}=await own(SB.from(T).delete().eq('id',id));if(error)throw error;SB_notify(T)}
+   delete:()=>SB_write(T,()=>own(SB.from(T).delete().eq('id',id)))
   }),
-  onSnapshot(cb,err){
-   const run=async()=>{const{data,error}=await own(SB.from(T).select('*'));if(error){err&&err(error);return}cb({docs:data.map(r=>({id:r.id,data:()=>m.out(r)}))})};
+  onSnapshot(cb,err){let seq=0;
+   const run=async()=>{const my=++seq;const{data,error}=await own(SB.from(T).select('*'));if(my!==seq||SB_pend[T])return;if(error){err&&err(error);return}cb({docs:data.map(r=>({id:r.id,data:()=>m.out(r)}))})};
    (SB_L[T]??=[]).push(run);run();
    SB.channel('rt_'+T+'_'+Math.random().toString(36).slice(2)).on('postgres_changes',{event:'*',schema:'public',table:T},()=>run()).subscribe();
   }
@@ -206,7 +230,7 @@ function rule(label,used,lim,cls){if(!lim)return'';const pc=Math.min(100,used/li
  return`<div class="lbl"><span>${label}</span><span class="mono">${F(used)}% / ${F(lim)}%</span></div><div class="bar ${cls||(pc>=80?'w':'')}"><i style="width:${pc}%"></i></div>`}
 const gt=(rows)=>rows.length?`<div class="sc"><table><tr><th></th><th>Trades</th><th>Win</th><th>P/L</th></tr>${rows.map(([k,g])=>`<tr><td>${esc(k)}</td><td class="n">${g.n}</td><td class="n">${Math.round(g.w/g.n*100)}%</td><td class="n ${cl(g.pnl)}">${SG(g.pnl)}</td></tr>`).join('')}</table></div>`:'<p class="note">Nothing yet.</p>';
 
-function head(a){return`<header><div><h1>HORC-SAVVY Journal</h1>${U.myName?`<div class="note">Signed in as ${esc(U.myName)}</div>`:''}</div><div class="row"><select id="acc">${S.cfg.accounts.map(x=>`<option value="${x.id}"${x.id===a.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" data-a="editacc" data-v="${a.id}">Limits</button><button class="btn" data-a="editacc" data-v="new">+ Account</button><button class="btn" data-a="editacc" data-v="manage">Manage</button><button class="btn" onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button></div></header>
+function head(a){return`<header><div><h1>HORC-SAVVY Journal</h1>${U.myName?`<div class="note">Signed in as ${esc(U.myName)}</div>`:''}</div><div class="row"><select id="acc">${S.cfg.accounts.map(x=>`<option value="${x.id}"${x.id===a.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" data-a="editacc" data-v="${a.id}">Account limits</button><button class="btn" data-a="editacc" data-v="new">+ Add account</button><button class="btn" data-a="editacc" data-v="manage">Manage accounts</button><button class="btn ghost" onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button></div></header>
 ${C?'':'<p class="note">Sign in to sync your private data across devices. Until then it is saved on this device only.</p>'}
 <nav>${[['dash','Dashboard'],['jour','Journal'],['plan','Plan'],['rules','Rules'],['feed','Friends']].map(([k,l])=>`<button data-a="tab" data-v="${k}" class="${U.tab===k?'on':''}">${l}</button>`).join('')}</nav>`}
 function manageV(){const A=S.cfg.accounts;return`<div class="card"><h2>Accounts</h2>${A.map(x=>{const T=allT().filter(t=>t.acc===x.id),last=T.map(t=>t.date).sort().pop(),act=x.id===U.acc;
@@ -242,7 +266,7 @@ function planV(){const all=plansFor(U.sym),P=shown(),d=U.draft&&U.draft.sym===U.
  const hist=all.filter(p=>p!==P);
  const h=hist.length?`<div class="card"><h2>Plan history</h2><div class="sc"><table><tr><th>Saved</th><th>Bias</th><th>Status</th><th></th></tr>${hist.map(p=>`<tr><td>${D(p.savedAt)}</td><td>${esc(p.bias||'-')}</td><td>${p.closedAt?'Closed':'Active'}${locked(p)?', locked':''}</td><td><button class="btn" data-a="view" data-v="${p.id}">Open</button></td></tr>`).join('')}</table></div></div>`:'';
  return topH+body+h}
-function render(){pending=false;if(U.loading){$('#app').innerHTML='<p class="note" style="padding:40px 0">Loading…</p>';return}if(U.gate){authView();return}if(!S.cfg.accounts.find(a=>a.id===U.acc))U.acc=S.cfg.accounts[0].id;
+function render(){pending=false;if(U.loading){$('#app').innerHTML='<p class="note" style="padding:40px 0">Loading…</p>';return}if(U.gate){authView();return}if(U.cfgSeen&&!U.accDone){U.accDone=true;if(S.cfg.accounts.find(a=>a.id===U.accWant))U.acc=U.accWant}if(!S.cfg.accounts.find(a=>a.id===U.acc))U.acc=S.cfg.accounts[0].id;if(U.cfgSeen&&ME)try{localStorage.setItem('horc_acc_'+ME,U.acc)}catch(e){}
  if(!S.cfg.instruments.includes(U.sym))U.sym=S.cfg.instruments[0]||'';
  const er=U.err,ok=U.ok;U.err='';U.ok='';const a=acct();
  $('#app').innerHTML=head(a)+(U.edit?editor():'')+(er?`<div class="toast">${esc(er)}</div>`:'')+(ok?`<div class="toast ok">${esc(ok)}</div>`:'')+({dash,jour,plan:planV,feed:feedV,rules:rulesV}[U.tab])(a);
@@ -422,10 +446,10 @@ document.addEventListener('focusout',()=>setTimeout(()=>{if(pending&&!/INPUT|TEX
 (async function init(){
  render();try{
  await SB_ready();sample=null;db=await use('db');
- user=await use('user');let me=null;try{me=user?await user.id():null}catch(e){}ME=me;if(me){NAMES[me]='You';try{U.myName=(await user.me()).name||''}catch(e){}}
+ user=await use('user');let me=null;try{me=user?await user.id():null}catch(e){}ME=me;try{U.accWant=localStorage.getItem('horc_acc_'+me)}catch(e){}if(me){NAMES[me]='You';try{U.myName=(await user.me()).name||''}catch(e){}}
  if(db&&me){C=db.collection('data/users/'+me);C2=db.collection('data/users/'+me+'/img/s');db.collection('links').onSnapshot(q=>{S.links=q.docs.map(d=>({id:d.id,...d.data()}));names();draw()},()=>{});db.collection('feed').onSnapshot(q=>{S.feed=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0));names();draw()},()=>{});let seeded=false;
   C.onSnapshot(q=>{S.trades={};S.plans={};let hasCfg=false;
-   q.docs.forEach(d=>{const k=d.id,v=JSON.parse(JSON.stringify(d.data()));if(k==='cfg'){hasCfg=true;S.cfg=v;if(!S.cfg.accounts?.length)S.cfg.accounts=[{id:'a1',name:'Main',start:10000,daily:5,maxdd:10,target:10}];if(!S.cfg.instruments?.length)S.cfg.instruments=DEF.slice()}else if(k.startsWith('t_'))S.trades[k.slice(2)]=v;else if(k.startsWith('p_')&&v.sym)S.plans[k.slice(2)]=v});
+   q.docs.forEach(d=>{const k=d.id,v=JSON.parse(JSON.stringify(d.data()));if(k==='cfg'){hasCfg=true;U.cfgSeen=true;S.cfg=v;if(!S.cfg.accounts?.length)S.cfg.accounts=[{id:'a1',name:'Main',start:10000,daily:5,maxdd:10,target:10}];if(!S.cfg.instruments?.length)S.cfg.instruments=DEF.slice()}else if(k.startsWith('t_'))S.trades[k.slice(2)]=v;else if(k.startsWith('p_')&&v.sym)S.plans[k.slice(2)]=v});
    if(!hasCfg&&!seeded){seeded=true;C.doc('cfg').set(S.cfg).catch(()=>{})}draw()},()=>{});
  }else{try{const r=JSON.parse(localStorage.getItem(LS)||'null');if(r)S=r}catch(e){}S.plans??={};S.imgs??={}}}catch(e){console.error(e)}
  U.why=!db?'storage is not available in this view':!ME?'no Claude account detected':'';U.loading=false;U.gate=!C;render();
