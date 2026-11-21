@@ -100,6 +100,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(
 #sbtoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:90vw;text-align:center}
 #sbtoast.show{opacity:1;transform:translate(-50%,0)}#sbtoast.bad{background:var(--dn);color:#fff;border-radius:12px}
 @media(max-width:600px){header{flex-direction:column;align-items:stretch}header .row select{flex:1 1 100%}header .row .btn{flex:1 1 auto}.card{padding:14px}}
+
+img.shot{cursor:zoom-in}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.gal:empty{display:none}.gi{position:relative}
+.gi .shot{margin-top:0;width:100%;height:120px;object-fit:cover}
+.gi .x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0}
+#lb{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center}
+#lb img{max-width:94vw;max-height:88vh;object-fit:contain;border-radius:6px;cursor:default}
+#lb button{position:absolute;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:30px;width:46px;height:46px;border-radius:50%;cursor:pointer;line-height:1}
+#lb .lbx{top:calc(14px + env(safe-area-inset-top,0px));right:14px}#lb .lbp{left:12px;top:50%;transform:translateY(-50%)}#lb .lbn{right:12px;top:50%;transform:translateY(-50%)}
+#lb.one .lbp,#lb.one .lbn{display:none}
+#lb .lbc{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:14px}
 </style></head>
 <body><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2"></script>
@@ -213,6 +225,25 @@ async function hydrate(){for(const el of document.querySelectorAll('img[data-id]
 function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);
  for(const w of [1400,1100,900,700]){const sc=Math.min(1,w/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
   for(const q of [.7,.55,.4]){const d=c.toDataURL('image/jpeg',q);if(d.length<190000)return res(d)}}rej(new Error('big'))};im.onerror=()=>rej(new Error('bad'));im.src=u})}
+
+const planImgIds=P=>P.imgs&&P.imgs.length?P.imgs:[P.id];
+async function addDraftImgs(fs){const d=U.draft;if(!d)return;U.err='';d.bias=$('#dbias').value;d.text=$('#dtext').value;const room=5-d.imgs.length;if(fs.length>room)U.err='Only 5 screenshots per plan. Extra files were skipped.';
+ for(const f of fs.slice(0,room)){try{d.imgs.push(await shrink(f))}catch(e){U.err='Could not read '+f.name+'. Try a PNG or JPEG.'}}render()}
+async function addPlanImgs(fs){const P=shown();if(!P||locked(P))return;U.err='';const ids=planImgIds(P).slice(),room=5-ids.length;if(fs.length>room)U.err='Only 5 screenshots per plan. Extra files were skipped.';
+ for(const f of fs.slice(0,room)){try{const k=P.id+'_'+uid();await storeImg(k,await shrink(f));ids.push(k)}catch(e){U.err='Could not save '+f.name+'. Try a PNG or JPEG.'}}
+ P.imgs=ids;putPlan(P);render()}
+/* click any screenshot to view it full size (arrows / swipe-free, Esc to close) */
+(function(){let L=[],i=0,box;
+ const show=()=>{box.querySelector('img').src=L[i].src;box.querySelector('.lbc').textContent=L.length>1?(i+1)+' / '+L.length:'';box.classList.toggle('one',L.length<2)};
+ const close=()=>{if(box){box.remove();box=null}},go=d=>{i=(i+d+L.length)%L.length;show()};
+ document.addEventListener('click',e=>{const t=e.target;
+  if(box&&(t===box||t.classList.contains('lbx')))return close();
+  if(box&&t.classList.contains('lbp'))return go(-1);if(box&&t.classList.contains('lbn'))return go(1);
+  if(t.tagName==='IMG'&&t.classList.contains('shot')&&t.getAttribute('src')){const c=t.closest('.card')||document;
+   L=[...c.querySelectorAll('img.shot')].filter(x=>x.getAttribute('src')&&!x.hidden);i=Math.max(0,L.indexOf(t));
+   box=document.createElement('div');box.id='lb';box.innerHTML='<button class="lbx" aria-label="Close">×</button><button class="lbp" aria-label="Previous">‹</button><img alt=""><button class="lbn" aria-label="Next">›</button><div class="lbc"></div>';document.body.appendChild(box);show()}});
+ document.addEventListener('keydown',e=>{if(!box)return;if(e.key==='Escape')close();else if(e.key==='ArrowLeft')go(-1);else if(e.key==='ArrowRight')go(1)});
+})();
 const acct=()=>S.cfg.accounts.find(a=>a.id===U.acc)||S.cfg.accounts[0];
 const allT=()=>Object.values(S.trades);
 function tradesFor(id){return allT().filter(t=>t.acc===id&&t.status!=='open').sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0))}
@@ -256,12 +287,12 @@ function planV(){const all=plansFor(U.sym),P=shown(),d=U.draft&&U.draft.sym===U.
  const topH=`<div class="chips">${S.cfg.instruments.map(i=>`<button class="chip ${i===U.sym?'on':''}" data-a="sym" data-v="${esc(i)}">${esc(i)}</button>`).join('')}</div>
 <div class="row" style="margin-bottom:14px"><input id="newsym" placeholder="Add pair, e.g. USDJPY" style="width:190px"><button class="btn" data-a="addsym">Add pair</button><button class="btn" data-a="rmsym">Remove ${esc(U.sym)}</button></div>`;
  let body='';
- if(d)body=`<div class="card"><h2>New ${esc(U.sym)} plan</h2>${fields(d.bias,d.text,false,'d')}<p class="note">TradingView screenshot (required to save)</p>${d.img?`<img class="shot" src="${d.img}" alt="">`:''}<div class="row" style="margin:8px 0"><label class="btn">${d.img?'Replace':'Upload'} screenshot<input id="dimg" type="file" accept="image/*" hidden></label></div><div class="row"><button class="btn p" data-a="saveplan" ${d.img?'':'disabled'}>Save plan</button><button class="btn" data-a="canceldraft">Cancel</button></div></div>`;
+ if(d)body=`<div class="card"><h2>New ${esc(U.sym)} plan</h2>${fields(d.bias,d.text,false,'d')}<p class="note">TradingView screenshots (at least 1 required, up to 5). Tap a screenshot to enlarge it.</p><div class="gal">${d.imgs.map((x,i)=>`<div class="gi"><img class="shot" src="${x}" alt=""><button class="x" data-a="rmdraft" data-v="${i}" title="Remove">×</button></div>`).join('')}</div><div class="row" style="margin:8px 0">${d.imgs.length>=5?'<span class="note">Maximum of 5 reached.</span>':`<label class="btn">${d.imgs.length?'Add more':'Upload'} screenshots (${d.imgs.length}/5)<input id="dimg" type="file" accept="image/*" multiple hidden></label>`}</div><div class="row"><button class="btn p" data-a="saveplan" ${d.imgs.length?'':'disabled'}>Save plan</button><button class="btn" data-a="canceldraft">Cancel</button></div></div>`;
  else if(!P)body=`<div class="card"><h2>${esc(U.sym)}</h2><p class="note">No plan yet.</p><button class="btn p" data-a="newplan">New plan</button></div>`;
  else{const lk=locked(P);P.chat??=[];
   const chat=P.chat.map(m=>`<div class="msg ${m.role==='user'?'u':'ai'}">${esc(m.content)}</div>`).join('')+(U.stream!==null?`<div class="msg ai" id="stream">${esc(U.stream)||'Thinking…'}</div>`:'');
-  body=`<div class="two"><div class="card"><h2>${esc(U.sym)} plan</h2><p class="note">${P.closedAt?'Closed':'Active'} · saved ${D(P.savedAt)} · ${lk?'locked since '+D(P.savedAt+LOCK):'editable until '+D(P.savedAt+LOCK)}</p>${fields(P.bias,P.text,lk,'p')}<img class="shot" id="shot" data-id="${P.id}" alt="">
-  <div class="row" style="margin-top:10px">${lk?'':'<label class="btn">Replace screenshot<input id="pimg" type="file" accept="image/*" hidden></label>'}<button class="btn" data-a="newplan">${P.closedAt?'New plan':'Plan exhausted: open new'}</button>${P!==all[0]?'<button class="btn" data-a="latest">Back to latest</button>':''}<button class="btn" data-a="shareplan">Share plan</button></div></div>
+  body=`<div class="two"><div class="card"><h2>${esc(U.sym)} plan</h2><p class="note">${P.closedAt?'Closed':'Active'} · saved ${D(P.savedAt)} · ${lk?'locked since '+D(P.savedAt+LOCK):'editable until '+D(P.savedAt+LOCK)}</p>${fields(P.bias,P.text,lk,'p')}<div class="gal">${planImgIds(P).map(k=>`<div class="gi"><img class="shot" data-id="${k}" alt="">${!lk&&planImgIds(P).length>1?`<button class="x" data-a="rmshot" data-v="${k}" title="Remove">×</button>`:''}</div>`).join('')}</div><p class="note">Tap a screenshot to enlarge it.</p>
+  <div class="row" style="margin-top:10px">${lk||planImgIds(P).length>=5?'':`<label class="btn">Add screenshots (${planImgIds(P).length}/5)<input id="pimg" type="file" accept="image/*" multiple hidden></label>`}<button class="btn" data-a="newplan">${P.closedAt?'New plan':'Plan exhausted: open new'}</button>${P!==all[0]?'<button class="btn" data-a="latest">Back to latest</button>':''}<button class="btn" data-a="shareplan">Share plan</button></div></div>
   <div class="card"><h2>Discuss with Claude</h2>${sample?`<div class="msgs">${chat||'<p class="note">Ask about the drivers, levels or scenarios for this pair.</p>'}</div>${lk?'<p class="note">This plan is locked, so chat is read-only.</p>':`<textarea id="q" rows="3" placeholder="What is the story on ${esc(U.sym)} this week?"></textarea><div class="row" style="margin-top:8px"><button class="btn p" data-a="send" ${U.busy?'disabled':''}>Send</button>${P.chat.length?'<button class="btn" data-a="clearchat">Clear</button>':''}</div>`}`:'<p class="note">AI chat is coming soon.</p>'}</div></div>`}
  const hist=all.filter(p=>p!==P);
  const h=hist.length?`<div class="card"><h2>Plan history</h2><div class="sc"><table><tr><th>Saved</th><th>Bias</th><th>Status</th><th></th></tr>${hist.map(p=>`<tr><td>${D(p.savedAt)}</td><td>${esc(p.bias||'-')}</td><td>${p.closedAt?'Closed':'Active'}${locked(p)?', locked':''}</td><td><button class="btn" data-a="view" data-v="${p.id}">Open</button></td></tr>`).join('')}</table></div></div>`:'';
@@ -335,8 +366,10 @@ function cal(a,s){const b=new Date();b.setDate(1);b.setMonth(b.getMonth()+U.cal)
 const linkedIds=()=>{const L=S.links||[],out=new Set(L.filter(l=>l.from===ME).map(l=>l.to));return[...new Set(L.filter(l=>l.to===ME&&out.has(l.from)).map(l=>l.from))]};
 async function shareDoc(o){if(!db||!ME)return;const aud=linkedIds();if(!aud.length){U.err='Link at least one friend first. See Linked friends in this tab.';return render()}
  try{await db.collection('feed').doc(o.kind==='journey'?'j_'+ME:'f'+uid()).set({...o,by:ME,ts:Date.now(),aud});U.ok='Shared with your linked friends.'}catch(e){U.err='Sharing failed. Please try again.'}render()}
-function sharePlan(){const P=shown();if(!P)return;const img=getImg(P.id);if(!img){U.err='The screenshot is still loading. Try again in a moment.';return render()}
- shareDoc({kind:'plan',sym:P.sym,bias:P.bias||'',text:String(P.text||'').slice(0,3000),img})}
+async function sharePlan(){const P=shown();if(!P)return;const imgs=[];
+ for(const k of planImgIds(P)){let d=getImg(k);if(!d&&C2){try{const x=await C2.doc(k).get();d=x.exists?x.data().d:null;if(d)IMG[k]=d}catch(e){}}if(d)imgs.push(d)}
+ if(!imgs.length){U.err='The screenshots are still loading. Try again in a moment.';return render()}
+ shareDoc({kind:'plan',sym:P.sym,bias:P.bias||'',text:String(P.text||'').slice(0,3000),img:imgs[0],imgs})}
 function journeyDoc(){const a=acct(),s=stats(a);if(!a.start||!s.n)return null;
  const p=s.pts.map(v=>+((v-a.start)/a.start*100).toFixed(2)),st=Math.max(1,Math.ceil(p.length/60)),pts=p.filter((_,i)=>i%st===0||i===p.length-1);
  return{kind:'journey',n:s.n,wr:s.w/s.n*100,ret:(s.eq-a.start)/a.start*100,avgR:s.avgR,dd:s.dd/a.start*100,pts}}
@@ -350,7 +383,7 @@ function friendsV(){const L=S.links||[],ld=linkedIds(),out=L.filter(l=>l.from===
 const lset=(a,b)=>db.collection('links').doc('l_'+a+'_'+b);
 function feedV(){const f=(S.feed||[]).filter(x=>x.by===ME||!x.aud||x.aud.includes(ME));
  const card=x=>{const who=x.by===ME?'You':(NAMES[x.by]||'A friend'),hd=`<div class="note">${esc(who)} · ${D(x.ts)}${x.by===ME?` <button class="x" data-a="unshare" data-v="${x.id}" aria-label="Remove">×</button>`:''}</div>`;
-  if(x.kind==='plan'){const im=typeof x.img==='string'&&x.img.startsWith('data:image/')?`<img class="shot" src="${esc(x.img)}" alt="">`:'';return`<div class="card">${hd}<h2>${esc(x.sym)} plan${x.bias?' · '+esc(x.bias):''}</h2><div class="msg" style="padding:0">${esc(x.text)}</div>${im}</div>`}
+  if(x.kind==='plan'){const L=(Array.isArray(x.imgs)&&x.imgs.length?x.imgs:[x.img]).filter(i=>typeof i==='string'&&i.startsWith('data:image/')),im=L.length?`<div class="gal">${L.map(i=>`<div class="gi"><img class="shot" src="${esc(i)}" alt=""></div>`).join('')}</div>`:'';return`<div class="card">${hd}<h2>${esc(x.sym)} plan${x.bias?' · '+esc(x.bias):''}</h2><div class="msg" style="padding:0">${esc(x.text)}</div>${im}</div>`}
   const N=v=>Number(v)||0;return`<div class="card">${hd}<h2>Trading journey</h2><div class="kpis"><div class="k"><span>Return</span><b class="${cl(N(x.ret))}">${SG(N(x.ret))}%</b></div><div class="k"><span>Trades</span><b>${N(x.n)}</b></div><div class="k"><span>Win rate</span><b>${Math.round(N(x.wr))}%</b></div><div class="k"><span>Avg R</span><b>${x.avgR==null?'n/a':F(N(x.avgR))}</b></div><div class="k"><span>Max drawdown</span><b>${F(N(x.dd))}%</b></div></div>${chart((x.pts||[]).map(Number))}</div>`};
  return friendsV()+inviteV()+`<p class="note" style="margin-bottom:12px">Plans and journeys your friends share appear here. Only what you choose to share is visible. Your journal stays private.</p>`+(f.length?f.map(card).join(''):'<p class="note">Nothing shared yet. Use Share plan or Share my journey.</p>')}
 const LINK='https://savvytraderz.netlify.app',SUBJ='Join me on HORC-SAVVY Journal',
@@ -422,7 +455,7 @@ const ACT={...ACT2,
  addtrade:()=>{return addRun();const pnl=parseFloat($('#t_pnl').value);if(isNaN(pnl)){U.err='Enter the P/L for the trade.';return render()}
   putTrade({id:uid(),ts:Date.now(),acc:U.acc,date:$('#t_date').value||today(),sym:$('#t_sym').value,side:$('#t_side').value,session:$('#t_ses').value,pnl,risk:Math.abs(parseFloat($('#t_risk').value))||0,note:$('#t_note').value.trim(),ck:readCk()});render()},
  deltrade:v=>delTrade(v),
- sym:v=>{U.sym=v;U.view=null;U.draft=null;render()},newplan:()=>{U.draft={sym:U.sym,bias:'',text:'',img:null};render()},canceldraft:()=>{U.draft=null;render()},view:v=>{U.view=v;render()},latest:()=>{U.view=null;render()},saveplan:async()=>{const d=U.draft;if(!d)return;d.bias=$('#dbias').value;d.text=$('#dtext').value;if(!d.img){U.err='Upload a TradingView screenshot before saving.';return render()};const id='pl'+uid(),prev=plansFor(d.sym)[0];try{await storeImg(id,d.img)}catch(e){U.err='Could not save the screenshot. Try again.';return render()};putPlan({id,sym:d.sym,bias:d.bias,text:d.text,savedAt:Date.now(),closedAt:null,chat:[]});if(prev&&!prev.closedAt){prev.closedAt=Date.now();putPlan(prev)}U.draft=null;U.view=null;render()},
+ sym:v=>{U.sym=v;U.view=null;U.draft=null;render()},newplan:()=>{U.draft={sym:U.sym,bias:'',text:'',imgs:[]};render()},canceldraft:()=>{U.draft=null;render()},view:v=>{U.view=v;render()},latest:()=>{U.view=null;render()},rmdraft:v=>{const d=U.draft;if(!d)return;d.bias=$('#dbias').value;d.text=$('#dtext').value;d.imgs.splice(+v,1);render()},rmshot:v=>{const P=shown(),ids=P?planImgIds(P):[];if(!P||locked(P)||ids.length<2)return;P.imgs=ids.filter(k=>k!==v);putPlan(P);if(C2)C2.doc(v).delete().catch(()=>{});delete IMG[v];render()},saveplan:async()=>{const d=U.draft;if(!d)return;d.bias=$('#dbias').value;d.text=$('#dtext').value;if(!d.imgs||!d.imgs.length){U.err='Upload at least one TradingView screenshot before saving.';return render()};const id='pl'+uid(),prev=plansFor(d.sym)[0];const ids=[];try{for(let i=0;i<d.imgs.length;i++){const k=i?id+'_'+i:id;await storeImg(k,d.imgs[i]);ids.push(k)}}catch(e){U.err='Could not save the screenshot. Try again.';return render()};putPlan({id,sym:d.sym,bias:d.bias,text:d.text,savedAt:Date.now(),closedAt:null,chat:[],imgs:ids});if(prev&&!prev.closedAt){prev.closedAt=Date.now();putPlan(prev)}U.draft=null;U.view=null;render()},
  addsym:()=>{const s=cleanSym($('#newsym').value);if(!s)return;if(!S.cfg.instruments.includes(s))S.cfg.instruments.push(s);U.sym=s;saveCfg()},
  rmsym:()=>{if(S.cfg.instruments.length<2)return;S.cfg.instruments=S.cfg.instruments.filter(i=>i!==U.sym);saveCfg()},
  send,clearchat:()=>{const P=shown();if(P&&!locked(P)){P.chat=[];putPlan(P)}render()},export:exportCSV};
@@ -431,8 +464,8 @@ document.addEventListener('change',e=>{const t=e.target;
  if(t.id==='acc'){U.acc=t.value;render()}
  else if(t.id==='pbias'||t.id==='ptext'){const P=shown();if(P&&!locked(P)){P.bias=$('#pbias').value;P.text=$('#ptext').value;putPlan(P)}}
  else if(t.id==='dbias'||t.id==='dtext'){if(U.draft){U.draft.bias=$('#dbias').value;U.draft.text=$('#dtext').value}}
- else if(t.id==='dimg'&&t.files[0]){if(U.draft){U.draft.bias=$('#dbias').value;U.draft.text=$('#dtext').value}pickImg(t.files[0],d=>{U.draft.img=d;render()})}
- else if(t.id==='pimg'&&t.files[0]){const P=shown();if(P&&!locked(P))pickImg(t.files[0],async d=>{try{await storeImg(P.id,d)}catch(e){U.err='Could not save the screenshot.'}render()})}
+ else if(t.id==='dimg'&&t.files.length){addDraftImgs([...t.files])}
+ else if(t.id==='pimg'&&t.files.length){addPlanImgs([...t.files])}
  else if(t.id==='t_liq'){$('#liqreq').innerHTML=reqHtml(t.value,{},'ck')}
  else if(t.id==='rv_liq'){$('#rkreq').innerHTML=reqHtml(t.value,(S.trades[U.rev]||{}).ck,'rk')}
  else if(t.id==='t_shot'&&t.files[0]){pickImg(t.files[0],d=>{U.setup=d;const p=$('#t_prev');p.src=d;p.hidden=false})}
